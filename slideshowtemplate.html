@@ -1,0 +1,363 @@
+<!-- thumbs:checksum:0.0:$D6AB2CB6 -->
+<html><head><title>Slideshow</title>
+
+<script language = "JavaScript">
+<!-- hide me
+// copyright 2000 Greggman
+var agt       = navigator.userAgent.toLowerCase();
+var is_major  = parseInt(navigator.appVersion);
+var is_ie     = (agt.indexOf("msie") != -1);
+var is_ie4up  = (is_ie  && (is_major >= 4));
+var is_nav    = ((agt.indexOf('mozilla')!=-1) && (agt.indexOf('spoofer')==-1)
+                  && (agt.indexOf('compatible') == -1) && (agt.indexOf('opera')==-1)
+                  && (agt.indexOf('webtv')==-1));
+var is_nav4up = (is_nav && (is_major >= 4));
+var is_mac    = (agt.indexOf("mac")!=-1);
+var slideTime = 5;
+var startClock = false;
+
+function picInfo(name, caption, page, width, height)
+{
+   this.name = name;
+   this.caption = caption
+   this.page = page;
+   this.width = width;
+   this.height= height;
+}
+
+var picTable = new Array (
+-- INFOHERE --
+                );
+var picIndex  = 0;      // current picture index
+var timerID   = null;   // timer handler
+var slideWin  = null;   // window with slide
+var slideMode = 1;      // 1 = automatic, 0 = manual
+var showCaptions = 1;   // 1 = show captions, 0 = hide captions
+var chasm = screen.availWidth;
+var mount = screen.availHeight;
+var junk;
+var dprintcache = "";
+var fDontWaitForLoading = true;
+var closing = false;
+
+function dprint(msg)
+{
+   if (window.document.debugstuff && window.document.debugstuff.debugtext)
+   {
+      window.document.debugstuff.debugtext.value += dprintcache + msg;
+      dprintcache = "";
+   }
+   else
+   {
+      dprintcache += msg;
+   }
+}
+
+function handleUnload(e)
+{
+   window.closing = true;
+
+   if (slideWin && !slideWin.closed)
+   {
+      slideWin.close ();
+   }
+
+   if (window.opener && !window.opener.closed)
+   {
+
+      picIndex--;
+      if (picIndex < 0)
+      {
+         picIndex = picTable.length - 1;
+      }
+
+      newURL   = picTable[picIndex].page;
+
+      window.opener.location.href= newURL;
+   }
+}
+
+function clearTimer ()
+{
+   if (timerID)
+   {
+      window.clearTimeout(timerID);
+      timerID = null;
+   }
+}
+
+function shutItDown ()
+{
+   if (slideWin && !slideWin.closed)
+	{
+		slideWin.close();
+	}
+   window.close();
+}
+
+function closeIt ()
+{
+   if (slideWin && !slideWin.closed)
+   {
+      // show current thumbnail
+
+      // close windows
+      clearTimer ();
+   }
+   window.setTimeout("shutItDown();", 5);
+}
+
+function doPrevSlide()
+{
+  // back up a picture (2 because we already advanced one before)
+  picIndex -= 2;
+  if (picIndex < 0)
+  {
+     picIndex += picTable.length;
+  }
+  // put in manual mode and go to next image
+  slideMode = 0;
+  queueNextPicture (5);
+}
+
+function doNextSlide()
+{
+   // put in manual mode and go to next image
+   slideMode = 0;
+   queueNextPicture (5);
+}
+
+// goto next slide and resume clock
+function doPlaySlide()
+{
+   // go back to auto mode
+   slideMode = 1;
+   queueNextPicture (5);
+}
+
+function doExitSlide()
+{
+   // close it down
+   closeIt ();
+}
+
+function doHideSlide()
+{
+   // close it down
+   window.blur ();
+   if (slideWin && !slideWin.closed)
+   {
+      slideWin.focus ();
+   }
+}
+
+function doShowSlide()
+{
+   // close it down
+   window.focus ();
+}
+
+// goto next slide and resume clock
+function doHideCaptions()
+{
+  // toggle captions
+  if (showCaptions)
+  {
+    showCaptions = 0;
+  }
+  else
+  {
+    showCaptions = 1;
+  }
+}
+
+function handleKey (whichCode)
+{
+   switch (whichCode) {
+   case  27: // esc
+   case  81: // 'q':
+   case 113: // 'Q':
+      doExitSlide();
+      break;
+   case 13: // return
+      doPlaySlide();
+      break;
+   case  78: // 'N':
+   case 110: // 'n':
+   case  32: // space
+      doNextSlide ();
+      break;
+   case  80: // 'P':
+   case 112: // 'p':
+      doPrevSlide ();
+      break;
+   case  83: // 'S':
+   case 115: // 's':
+      doShowSlide ();
+      break;
+   case  72: // 'H':
+   case 104: // 'h':
+      doHideSlide ();
+      break;
+   case  67: // 'C':
+   case  99: // 'c':
+      doHideCaptions ();
+      break;
+   }
+}
+
+function handlePress(e)
+{
+   var whichCode = (window.Event) ? e.which : e.keyCode;
+
+   window.handleKey(whichCode);
+}
+
+function checkToStartClock ()
+{
+   if (window.startClock || fDontWaitForLoading)
+   {
+      queueNextPicture (window.slideTime * 1000);
+   }
+   else
+   {
+      setupToCheckStartClock ();
+   }
+}
+
+function setupToCheckStartClock ()
+{
+   clearTimer ();
+   timerID = window.setTimeout("checkToStartClock();", 1 * 1000);
+}
+
+
+function showNextPicture ()
+{
+   // clear timeout
+   clearTimer();
+
+   // mark that we are loading
+
+
+   // open a window
+
+   var slideURL =
+      'showpic.html?pic="' + picTable[picIndex].width + ':'
+                           + picTable[picIndex].height + ':'
+                           + picTable[picIndex].name + ':'
+                           + picTable[picIndex].caption + ':'
+                           + showCaptions + '"';
+
+         ;
+   dprint (slideURL + "\n");
+   if (slideWin && !slideWin.closed)
+   {
+      slideWin.reloading = true;
+   }
+   var windowOptions = "";
+   if (is_ie4up && !is_mac)
+   {
+      windowOptions = "fullscreen=yes";
+   }
+   else
+   {
+      windowOptions = 'top=0,left=0,width=' + (chasm - 10) + ',height=' + (mount - 30);
+   }
+   slideWin = open(slideURL,"slideWin", windowOptions);
+   if (slideWin.opener == null) slideWin.opener = self;
+
+   picIndex++;
+   if (picIndex >= picTable.length)
+   {
+      picIndex = 0;
+   }
+   if (slideMode)
+   {
+      startClock = false;
+      setupToCheckStartClock();
+   }
+}
+
+function queueNextPicture (time)
+{
+   clearTimer ();
+   timerID = window.setTimeout("showNextPicture();", time);
+}
+
+// start us up
+
+// get which picture to start with
+if (window.location.search.length > 0)
+{
+   var index = location.search.substring(1);
+   picIndex = (index - 0);
+   if (picIndex >= picTable.length)
+   {
+      picIndex = 0;
+   }
+}
+showNextPicture();
+
+if (is_nav4up)
+{
+   document.onkeydown = handlePress;
+   document.captureEvents(Event.KEYDOWN);
+}
+
+// show me -->
+</script>
+<META HTTP-EQUIV="Page-Enter" content="RevealTrans(Duration=3,Transition=23)"> 
+</head>
+<body onkeypress="handlePress(event);return true;" onunload="handleUnload(event);" topmargin="0" leftmargin="0" bgcolor="#000000">
+<table border="0" cellspacing="0" cellpadding="0" align="center" height="100%">
+  <tr>
+    <td align="center" valign="center">
+      <table border="0" cellspacing="3" cellpadding="0" align="center">
+        <tr>
+          <td>
+            <a href="http://www.yahoo.com"  onClick="doPrevSlide(); return false;">
+            <img border="0" width="37" height="35" src="slideprev.gif" alt="Previous Slide (p)">
+            </a>
+          </td>
+          <td>
+            <a href="http://www.yahoo.com"  onClick="doPlaySlide(); return false;">
+            <img border="0" width="37" height="35" src="slideplay.gif" alt="Play (enter)">
+            </a>
+          </td>
+          <td>
+            <a href="http://www.yahoo.com"  onClick="doNextSlide(); return false;">
+            <img border="0" width="37" height="35" src="slidenext.gif" alt="Next Slide (n, space)">
+            </a>
+          </td>
+        </tr>
+      </table>
+      <table border="0" cellspacing="3" cellpadding="0" align="center">
+        <tr>
+          <td>
+            <a href="http://www.yahoo.com"  onClick="doHideSlide(); return false;">
+            <img border="0" width="37" height="35" src="slidehide.gif" alt="Hide this panel (h)">
+            </a>
+          </td>
+          <td>
+            <a href="http://www.yahoo.com"  onClick="doHideCaptions(); return false;">
+            <img border="0" width="37" height="35" src="slidecaption.gif" alt="Show/Hide captions (c)">
+            </a>
+          </td>
+          <td>
+            <a href="http://www.yahoo.com"  onClick="doExitSlide(); return false;">
+            <img border="0" width="37" height="35" src="slideexit.gif" alt="Quit Slide Show (q, esc)">
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<br><br><br>
+
+<form name="debugstuff">
+  <p><textarea rows="20" name="debugtext" cols="60"></textarea></p>
+</form>
+</body>
+</html>

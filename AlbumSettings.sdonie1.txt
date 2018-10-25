@@ -1,0 +1,96 @@
+{
+  # set directory to find photos. Note that you have to use \\ on windows for a directory
+  # separator:
+  PhotosDir => "c:\\personal\\drillingInfoPhotos",
+
+  # set directory where web album is generated:
+  AlbumDir => "\\\\dataintegration\\webshare\\photos",
+
+  # set largest dimension of large photos, in pixels:
+  LargeSize => 800,
+
+  # set largest dimension of large photos, in pixels:
+  SmallSize => 200,
+
+  # set jpeg compression quality:
+  PhotoQuality => 0.75,
+
+  # if this is 1, all HTML pages will be generated each time.
+  # if this is 0, then HTML pages will only be generated if they are needed - speeds things up a tiny bit.
+  CleanHTML => 1,
+
+  # set filename of main page:
+  MainPageName => "index.html",
+
+  # set filename for RSS feed:
+  RSSFeedName => "NewPhotos.xml",
+  # set title for RSS feed:
+  RSSFeedTitle => "Data Integration Photo Album New Photos",
+  # set description for RSS feed:
+  RSSDescription => "All the freshest photos!",
+  # set person who created this RSS feed:
+  RSSCreator => "Steve Donie",
+  RSSImageURL => "avatar-rss.jpg",
+
+  # set title of main page, shown in titlebar of browser:
+  PageTitle => "Photo Album",
+
+  # set text of link to Photos Home:
+  PhotosPageLink => "Photo Album",
+
+  # set email address - have to use \@ for at sign,
+  # set this to "none" to have none.
+  #email => "someone\@example.com",
+  email => "none",
+
+  # copyright notice
+  copyrightString => "All images copyright&copy; Steve Donie, all rights reserved. Do not use without permission.",
+
+  # This can be set to one of three values:
+  # request - large pictures have a mailto link that has a subject
+  #           line that requests the full size version of this photo.
+  #           This is good for posting to websites. Requires that the email
+  #           address be set to a valid email.
+  # localfullsize - large pictures have a link to the local (filesystem) full size
+  #           image.
+  # or "" to have no link
+  BigPicLink => "httpfullsize",
+
+  # color to be used for bars, text, etc
+  # can be an HTML color name or number.
+  # Most color names you might think of will probably
+  # work.
+  ThemeColor => "Navy",
+
+  # color used for contrasting text in areas where
+  # ThemeColor is used as a background.
+  ThemeText => "White",
+
+  # set name of page to link "up" to
+  HomePageName => "Data Integration",
+
+  # set url of page to link "up" to.
+  # defaults to the root index,
+  # You typically set this to the URL of your home page.
+  HomePageURL => "http://dataintegration/",
+
+  # url of Album page - a relative URL to the HomePage
+  # it should have a trailing slash on it
+  AlbumPageURL => "webshare/photos/",
+
+  # Comma separated list of directories/patterns to skip when making albums.
+  # Can also include regular expressions.
+  # See http://www.perldoc.com/perl5.6/pod/perlre.html#Regular-Expressions
+  # for info on how to write regular expressions.
+  # examples: .*\\CVS\\.* will skip any directory that has \CVS\ somewhere in the
+  # pathname, include c:\CVS\something\something, c:\something\CVS\something, etc.
+  # I skip those directories because I use CVS to keep backups of my photos on
+  # multiple machines.
+  SkipDirs => (".*\\CVS\\.*,.*\\\.svn\\.*"),
+
+  # Comma separated list of directories/patterns to include when making albums.
+  # Can also include regular expressions.
+  # Set this to ".*" to include all directories.
+  # examples: .*2002.* matches all directories with "2002" in them.
+  IncludeDirs => ("2006-11,2006-10,2006 10,2008.*"),
+}

@@ -1,0 +1,130 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>MakeAlbum Command line syntax</title>
+</head>
+
+<body>
+
+    <h4> MakeAlbum Command line syntax:</h4>
+    <pre>MakeAlbum [-PhotoDir directory] [-AlbumDir directory]
+          [-BigSize number] [-SmallSize number] [-Quality .NN] [-SkipNoWeb] [-MainPage filename] 
+          [-Title WebPageTitle] [-noPause] [-cleanHTML]</pre>
+    <h4> Parameters:</h4>
+<ul>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+PhotoDir&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is the full drive and directory path to where the original photos are stored. Subdirectories under this directory will result in
+web pages being created for each subdirectory. You
+can name subdirectories however you like, but if you name them using the form YYYY-MM (year and month) then the web pages will be in order by year and month and they will have
+nice names like &quot;October 1967&quot; for a directory named 1967-10.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+AlbumDir&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is the full drive and directory path to where the Web Album will be initially created.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+BigSize&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is the largest dimension (in pixels) for the large size of photo on the web site.
+I use 600, but you may want to use a smaller number so that the pages fit better
+on small screens, or to reduce the overall file size of your website. If your web
+hosting provider only gives you 15 MB of space, you will probably want to use a
+smaller number than if you have 300MB!&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+SmallSize&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is the largest dimension (in pixels) for the small thumbnails on the website. 200 is a good number here.
+Again, reducing the size will reduce the file size of your album.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+Quality&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is the JPEG compression quality to use. If you do not specify
+a value, then .75 will be used, which is a good balance between
+file size and quality. Valid numbers are from 0.0 to 1.0, with
+1.0 meaning no compression, highest quality.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+SkipNoWeb&nbsp;&nbsp; is either yes or no, to control whether directories with a file named NoWeb.txt are used in the web photo album. By default, this is 'yes'.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+MainPage&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is the name of the file to create for the main 'index' page.
+Title is the title that will be placed into the titlebar of the web browser when people view your pages. It is also used on the pages themselves.
+The name should be something like &quot;PhotoIndex.html&quot;. See the note
+below about -cleanHTML for reasons why.</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+Title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+is the Title for the web page - this is what will be displayed in the title bar
+of the browser.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">noPause&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    indicates that the program should not
+pause (useful if calling from another batch file).&nbsp;I have this set up on my
+own machine to make 3 different albums - one for my intranet, where I have
+almost unlimited web storage space, one for Tripod, and one for GeoCities. I can
+update all 3 at once by running &quot;3Albums.bat -nopause&quot;. I have
+included 3Albums.bat and the other batch files I use in the zip file as an
+example. By default, this is off.
+  </li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">cleanHTML&nbsp;&nbsp; When
+    MakeAlbum runs, it creates many HTML formatted files - some for the index
+    pages, and some for the individual photo pages. One strange convention I
+    have come up with is that the index pages have an extension of .html, and
+    the photo pages have an extension of .htm. Specifying -cleanHTML on the
+    command line causes all the index pages to be deleted and re-created, which
+    is useful if you add a new directory of photos, so that the indexes for each
+    directory get re-created as well. By default, this is off, but I have it set
+    in MyAlbum.bat to be always on. It doesn't take very long to re-create these
+    files or to upload them - the only thing is to be careful that other files
+    don't get deleted by accident.<br>
+    <font color="#FF0000"><b>WARNING:</b> If you have created other .html files, they will also be
+    deleted, unless you mark them read-only!!<br>
+    </font>To make a file read-only, right-click on it and select
+    &quot;Properties&quot;, then check the read-only box.&nbsp;
+  </li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+-?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Shows this file.&nbsp;</li>
+  <li>
+    <p style="text-indent: -90; margin-left: 90">
+-help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Shows more extensive help and tips.</li>
+</ul>
+
+<p>
+Please note that the preferred way of setting parameters is by creating a file
+named MyAlbum.bat, based on the MyAlbumSample.bat included with the
+distribution. Here is what that file looks like:
+</p>
+<pre>@echo off
+REM -------------------- Change settings here if you want to -------------------
+SET PhotosDir=E:\Photos
+SET AlbumDir=E:\Album
+SET BigSize=600
+SET SmallSize=200
+SET PhotoQuality=.75
+SET SkipNoWeb=yes
+SET MainPageName=PhotoIndex.html
+SET PageTitle=Donie Web Photo Album
+SET AlbumNoPause=
+SET CleanHTML=</pre>
+
+<p>
+As you can see, the names in MyAlbum.bat may be slightly different from those specified on the command line (i.e. AlbumNoPause vs.
+-noPause), but the effects are the same as described above. 
+</p>
+
+<a href="MakeAlbumReadme.htm">Click here for Installation and Usage Notes</a>
+
+<p align="center">
+
+
+Created by, and copyright (c) 2000-2001, Steve Donie<a href="mailto:SteveDonie@yahoo.com"><br>
+SteveDonie@yahoo.com</a>&nbsp;<br>
+<a href="http://stevedonie.tripod.com">http://stevedonie.tripod.com</a>&nbsp;&nbsp;<br>
+Free for personal use.</p>
+
+</body>
+
+</html>

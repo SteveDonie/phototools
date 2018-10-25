@@ -1,0 +1,191 @@
+<html><head><title>Showpic</title>
+<style type = "text/css">
+<!--
+body {  background: #000000; }
+}
+//  -->
+</style>
+<script language = "JavaScript">
+<!-- hide me
+// copyright 2000 Greggman
+var agt       = navigator.userAgent.toLowerCase();
+var is_major  = parseInt(navigator.appVersion);
+var is_ie     = (agt.indexOf("msie") != -1);
+var is_ie4up  = (is_ie  && (is_major >= 4));
+var is_nav    = ((agt.indexOf('mozilla')!=-1) && (agt.indexOf('spoofer')==-1)
+                  && (agt.indexOf('compatible') == -1) && (agt.indexOf('opera')==-1)
+                  && (agt.indexOf('webtv')==-1));
+var is_nav4up = (is_nav && (is_major >= 4));
+
+var picWidth = 8;
+var picHeight = 8;
+var picName = "";
+var picCaption = "";
+var showCaption = 1;
+var reloading = true;
+
+function handlePress(e)
+{
+   var whichCode = (window.Event) ? e.which : e.keyCode;
+
+   if (window.opener && !window.opener.closed)
+   {
+      switch (whichCode)
+      {
+      case  27: // esc
+      case  81: // 'q':
+      case 113: // 'Q':
+         window.reloading = true;
+         break;
+      }
+      window.opener.handleKey(whichCode);
+   }
+}
+
+function handleClick(e)
+{
+   if (window.opener && !window.opener.closed)
+   {
+      window.opener.handleKey(83); // show
+   }
+}
+
+function handleLoad (e)
+{
+   if (window.opener && !window.opener.closed)
+   {
+      window.opener.startClock = true;
+   }
+}
+
+function handleUnload (e)
+{
+   if (!window.reloading)
+   {
+      window.reloading = true;
+      if (window.opener && !window.opener.closed && !window.opener.closing) { window.opener.close(); }
+   }
+}
+
+function setupPicture()
+{
+   if (window.location.search.length > 0)
+   {
+      var pictureInfo = unescape(location.search.substring(1));
+      var tempPos;
+      var startPos;
+      var temp;
+      var fontColor;
+
+      tempPos = pictureInfo.indexOf(":");
+      temp    = pictureInfo.substring(5, tempPos);
+      picWidth = (temp - 0);
+
+      startPos = tempPos + 1;
+      tempPos  = pictureInfo.indexOf(":", startPos);
+      temp     = pictureInfo.substring(startPos, tempPos);
+      picHeight= (temp - 0);
+
+      startPos = tempPos + 1;
+      tempPos  = pictureInfo.indexOf(':', startPos);
+      picName  = pictureInfo.substring(startPos, tempPos);
+
+      startPos = tempPos + 1;
+      tempPos  = pictureInfo.indexOf(':', startPos);
+      picCaption  = pictureInfo.substring(startPos, tempPos);
+
+      startPos = tempPos + 1;
+      tempPos  = pictureInfo.indexOf('"', startPos);
+      temp     = pictureInfo.substring(startPos, tempPos);
+      showCaption = (temp - 0);
+
+      var newWidth  = picWidth;
+      var newHeight = picHeight;
+      var scrnWidth = 300;
+      var scrnHeight = 300;
+
+      if (is_nav4up)
+      {
+         scrnWidth  = window.innerWidth;
+         scrnHeight = window.innerHeight;
+      }
+      else if (is_ie4up)
+      {
+         scrnWidth  = window.screen.availWidth;
+         scrnHeight = window.screen.availHeight;
+      }
+      else if (document.body)
+      {
+         scrnWidth = document.body.clientWidth;
+         scrnHeight = document.body.clientHeight;
+      }
+      else
+      {
+         scrnWidth = 640;
+         scrnHeight = 480;
+      }
+
+      if (newWidth > scrnWidth)
+      {
+         newHeight = (newHeight * scrnWidth) / newWidth;
+         newWidth  = scrnWidth;
+      }
+
+      if (newHeight > scrnHeight)
+      {
+         newWidth = (newWidth * scrnHeight) / newHeight;
+         newHeight = scrnHeight;
+      }
+      newWidth = Math.floor(newWidth);
+      newHeight = Math.floor(newHeight);
+
+      if (showCaption )
+      {
+        fontColor = "white";
+      }
+      else
+      {
+        fontColor = "black";
+      }
+
+      var slideHTML =
+            '<table border="0" width="100%" height="100%">' +
+              '<tr>' +
+                '<td width="100%">' +
+                  '<div align="center">' +
+                    '<center>' +
+                    '<table border="0" cellspacing="0" cellpadding="0">' +
+                      '<tr>' +
+                        '<td>' +
+                          '<p align="center"><img border="0" src="' + picName + '" width="' + newWidth + '" height="' + newHeight + '" onmouseup="handleClick(event);return true;" alt="' + picCaption + '"></p>' +
+                          '<center><font color="' + fontColor + '">' +
+                          picCaption +
+                          '</font></center>' +
+                        '</td>' +
+                      '</tr>' +
+                    '</table>' +
+                    '</center>' +
+                  '</div>' +
+                '</td>' +
+              '</tr>' +
+            '</table>' +
+            ''
+            ;
+      window.document.write (slideHTML);
+      reloading = false;
+   }
+}
+if (is_nav4up)
+{
+   document.onkeydown = handlePress;
+   document.onmouseup = handleClick;
+   document.captureEvents(Event.KEYDOWN | Event.MOUSEDOWN);
+}
+setupPicture();
+// show me -->
+</script>
+<META HTTP-EQUIV="Page-Enter" content="RevealTrans(Duration=3,Transition=23)"> 
+</head>
+<body  bgcolor="#000000" scroll=no topmargin="0" leftmargin="0" onkeypress="handlePress(event);return true;" onmouseup="handleClick(event);return true;" onunload="handleUnload(event);" onload="handleLoad(event);">
+</body>
+</HTML>

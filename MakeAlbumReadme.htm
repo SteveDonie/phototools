@@ -1,0 +1,230 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>Instructions for using MakeAlbum</title>
+</head>
+
+<body>
+
+<h1>Instructions for using MakeAlbum</h1>
+<h4>
+
+Overview</h4>
+<p>
+
+This program creates Web Photo Albums based on an existing directory of
+photos. A Web Photo Album consists of an initial web page with a name that 
+you specify (I call mine PhotoIndex.html) that has links to other web pages, 
+one per subdirectory under the main Photos directory. All the photos have to 
+be in the JPEG format, with an extension of .JPG
+The other web pages each have links like the main page (to the
+other pages), and also have thumbnails of each photo that link to a larger
+version of each photo. To see an example of this in action, surf over to <a href="http://stevedonie.tripod.com/">http://stevedonie.tripod.com/</a></p>
+<p>
+
+The work here is done by a variety of methods. A Perl program does most of the work, so if you don't have Perl installed, it won't work. See the
+link just below for instructions on installing Perl. There
+is a little Java program to create the resized pictures, so you need to have Java
+installed - it also uses a feature only in Java 1.4, so make sure you get a
+recent version. I've also supplied a batch file to start things off on a
+DOS/Windows machine. It should probably work on other machines that have Perl
+and Java, but I've never tested that.</p>
+<p>
+
+ To install a Perl interpreter for Windows, I recommend
+ActivePerl, which is free. You can get it from <a href="http://www.activestate.com/ActivePerl/">http://www.activestate.com/ActivePerl/</a>&nbsp;<br>
+ Installing
+it using the default settings will be fine.&nbsp;</p>
+<p>
+Most machines these days already have Java on them, but if you get errors while
+running this, you can get the Sun JRE (Java Runtime Environment) for free from <a href="http://java.sun.com/j2se/1.4/jre/download-windows.html">http://java.sun.com/j2se/1.4/jre/download-windows.html</a>&nbsp;</p>
+<h4>
+Installation:</h4>
+<p>
+The self-extracting zip file should extract the files needed to the directory
+you specify. By default, this is C:\MakeAlbum, but
+feel free to change this to anything you want. The zip file will create 2
+directories under the main one, one named PhotoTools, the other named Photos.
+The PhotoTools directory has the program files, the Photos directory is
+initially empty (this is where it wants to keep photos by default). After the files are extracted,
+there are a couple of steps before you create your first album.</p>
+<ol>
+  <li>You will have to at least tell the program where your photos are, and
+    where to make your Web Album. There are only 12 different settings to
+    change, so it's not hard to customize how the program works. You can do this
+    by editing the file 'AlbumSettings.default' or by copying that file to some
+    other name. I have three different versions of my photo album, so I have
+    three files - AlbumSettings.tripod, AlbumSettings.geocities, and
+    AlbumSettings.lonestar. <a href="MakeAlbumSyntax.htm">See the syntax page</a>
+    for more details on what options are available. If you don't do anything, it
+    should still work right out of the box, if you have your directories set up
+    like I have mine set up.</li>
+  <li>Next, make sure that the directory where all your photos are kept is set
+    up like the program expects. The way the program was designed to be used is that you have a
+    main directory (like <a href="file:///c:/photos">C:\MakeAlbum\photos</a>) that
+    contains a number of subdirectories. These should only be one level deep.
+    The directories can be named anything you like, but I like to keep mine by
+    year and month, so most of mine have names like &quot;2000-01&quot;, etc.
+    Naming them this way, with the year first, keeps them all in order. See the
+    Tips section below for more directory naming ideas.</li>
+  <li>If you want to put captions on your photos, there are 2 ways to do it. The
+    first is to rename the files to have caption-like names. To keep them in
+    order, you can have names that start with a number, and then space, dash,
+    space, and the caption.&nbsp;<br>
+    The second, more powerful way, is to have a caption file for each photo. The
+    name of the caption file is the same as the name of the photo, but with a
+    .txt extension instead of .jpg - so for the file 02032501.jpg, you create a
+    file 02032501.txt. That text file has 3 sections. It looks like this:<br>
+    <font face="Courier New">&lt;!-- THUMBSPART:caption --><br>
+    The Bulletin Board!&nbsp;<br>
+    &lt;!-- THUMBSPART:comment --><br>
+    We only got one put up, and we didn't&nbsp;<br>
+    quite finish the roofing, but I think it looks&nbsp;<br>
+    &lt;b&gt;MAHVELOUS!&lt;b&gt;<br>
+    &lt;!-- THUMBSPART:name --><br>
+    this is not used<br>
+    </font>To make this easy, download a program that was written to work with a
+    similar web album called Thumbs. <a href="http://www.greggman.com/thumbs/shellext.htm">http://www.greggman.com/thumbs/shellext.htm</a><br>
+    You can even put HTML codes inside the captions and comments if you want to.
+    The program will use the captions under each photo on the thumbnail index
+    pages, and also on the page that shows the photos in their larger size. The
+    coment will only be shown under the larger size photos, and I currently
+    don't use the name at all.</li>
+  <li>Now you can try making your Web Album. Open up a command prompt (DOS
+    Window) and change to the directory where you you unzipped everything, and
+    then type &quot;makealbum&quot; to start it going. When you are done, you
+    will have a local copy of your web photo album in the directory you
+    specified. If you keep things set up with the defaults, the album will be at
+    <a href="file:///C:/MakeAlbum/WebAlbum/PhotoIndex.html">C:\MakeAlbum\WebAlbum\PhotoIndex.html</a>
+    You can test your
+    website out by opening the &quot;PhotoIndex.html&quot; page that was created
+    by the program. After you have tested it, you will probably want to upload
+    it to a webserver somewhere - see the section on uploading below for a neat
+    way to do this.</li>
+</ol>
+<h4>
+Using the program:</h4>
+<p>
+
+ <a href="MakeAlbumSyntax.htm">See the syntax page</a> for more
+details on how to do things either way.</p>
+
+<h4>
+
+Some Tips:&nbsp;</h4>
+
+<p>
+
+You can use strange characters (including space,~!@#$%) that are legal 
+in Windows filenames in the original photo and directory names. These
+characters will be stripped out in the names of files and directories for
+the web album since many web servers are UNIX-based and won't accept the 
+strange characters.&nbsp;</p>
+
+<p>
+
+For photo names, you can use the strange characters to have 'caption-
+like' names for your photos, and these original caption-like names will be 
+used as captions on the web pages. Note that '!' is a legal DOS filename
+character, but '?' is not. Not much I can do about that.</p>
+
+<p>
+
+To make photos in a directory show up on the web page in a certain order, you
+can name the photos like this:</p>
+
+<pre>    1001 - Picture of me.jpg 
+    1234 - Another picture.jpg </pre>
+
+<p>
+
+If you do this, the captions will have the number and ' - ' stripped out, 
+as well as the extension, so for the example, the captions on the web page would be 
+&quot;Picture of me&quot; and &quot;Another Picture&quot;, and the pictures will show up on the
+web page in 
+numerical order. For this to work, make sure that you have names that are all
+digits, then space, dash, space, then the caption you want. Be careful though - if you have files
+with names that start 1 through
+10, 10 will show up before 2 unless you name them 01, 02, to 10. It isn't
+a numerical sorting, but an alpha-numeric sorting that happens.</p>
+
+<p>
+
+For directory names, you can use the strange characters to force the links 
+in the web pages to be in a certain order, instead of in the normal order, 
+which is typically alphabetical, with numbers appearing before letters.
+Many of the special characters come even earlier in the sorting order than
+numbers, so by using them as the first character of a directory or file 
+name, you can affect the order of the pages in the album or the photos on
+a page.&nbsp;Here's the sorting order that the program uses:</p>
+
+<p>
+
+ !"#$%&amp;'()*+,-./0123456789:;&lt;=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmno<br>
+pqrstuvwxyz{|}~&#8962;ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥&#8359;ƒáíóúñÑªº¿&#8976;¬½¼¡«»&#9617;&#9618;&#9619;&#9474;&#9508;&#9569;&#9570;&#9558;&#9557;&#9571;&#9553;&#9559;&#9565;&#9564;&#9563;&#9488;<br>
+&#9492;&#9524;&#9516;&#9500;&#9472;&#9532;&#9566;&#9567;&#9562;&#9556;&#9577;&#9574;&#9568;&#9552;&#9580;&#9575;&#9576;&#9572;&#9573;&#9561;&#9560;&#9554;&#9555;&#9579;&#9578;&#9496;&#9484;&#9608;&#9604;&#9612;&#9616;&#9600;&#945;ß&#915;&#960;&#931;&#963;µ&#964;&#934;&#920;&#937;&#948;&#8734;&#966;&#949;&#8745;&#8801;±&#8805;&#8804;&#8992;&#8993;÷&#8776;°&#8729;·&#8730;&#8319;²&#9632; </p>
+
+<p>
+
+If you don't want a certain directory in the original Photos directory to be 
+included in the web photo album, just create an empty text file named 
+&quot;NoWeb.txt&quot; in that directory. This is great if your web server is a limited 
+size, or if you have directories you just don't want posted. You can override
+this by setting the SkipNoWeb parameter on the command line or in this batch 
+file. Of course, to exclude multiple directories you can just copy that file
+to each directory to exclude.&nbsp;</p>
+
+<h4>
+
+Uploading your web site</h4>
+
+<p>
+Recently I discovered a neat program that I use to update my web sites once I have created
+them on my computer. The program is called sitecopy, and is available for free from 
+the author. What it does is synchronize a directory on your machine with your web site
+using the FTP protocol. Very nice, as it just updates the things that have changed.
+You can get it here: <a href="http://www.lyra.org/sitecopy/">http://www.lyra.org/sitecopy/</a><br>
+Getting sitecopy set up was a little tricky - it was designed for Unix, and getting it working on Windows
+took some time. You have to install something called CygWin, which makes some Unix commands available
+in windows. CygWin is available (again, free) from <a href="http://www.cygwin.com">http://www.cygwin.com</a>&nbsp;
+
+</p>
+
+<p>
+If you need some help contact either me or the author of those
+programs.
+
+</p>
+
+<p>If this sounds too daunting, you may want to just get one of the many fine
+FTP programs available. I happen to like CuteFTP and FTPExplorer, which are
+available at <a href="http://www.cuteftp.com">http://www.cuteftp.com</a> and <a href="http://www.ftpx.com">http://www.ftpx.com</a>,
+respectively.
+
+</p>
+
+<p>As far web hosting, there are many options there, too. I am using Tripod,
+which currently offers 50MB of web space for free, plus an easy-to-remember
+domain name like <a href="http://stevedonie.tripod.com">http://stevedonie.tripod.com</a>&nbsp;
+
+</p>
+
+<p>
+<a href="MakeAlbumSyntax.htm">Click here for the command line syntax.</a>
+
+</p>
+
+<p align="center">
+
+
+Created by, and copyright (c) 2000-2001, Steve Donie<a href="mailto:SteveDonie@yahoo.com"><br>
+SteveDonie@yahoo.com</a>&nbsp;<br>
+<a href="http://stevedonie.tripod.com">http://stevedonie.tripod.com</a>&nbsp;&nbsp;<br>
+Free for personal use.</p>
+
+</body>
+
+</html>
