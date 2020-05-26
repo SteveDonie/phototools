@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<album name="projects.datical" URL="http://album.donie.us/" time="1589402483">
+  <message priority="info"><![CDATA[----- Configuration in AlbumSettings.projects.datical.txt -----
+]]></message>
+  <message priority="info"><![CDATA[AlbumDir	: C:\Users\Steve\albums\projects
+]]></message>
+  <message priority="info"><![CDATA[AlbumPageURL	: projects/album/
+]]></message>
+  <message priority="info"><![CDATA[BigPicLink	: httpfullsize
+]]></message>
+  <message priority="info"><![CDATA[CleanHTML	: 0
+]]></message>
+  <message priority="info"><![CDATA[ConfigName	: projects.datical
+]]></message>
+  <message priority="info"><![CDATA[FullSizeBaseURL	: http://album.donie.us/ProjectsFullSize/
+]]></message>
+  <message priority="info"><![CDATA[HomePageName	: Home
+]]></message>
+  <message priority="info"><![CDATA[HomePageURL	: http://album.donie.us/
+]]></message>
+  <message priority="info"><![CDATA[IncludeDirs	: .*20.*,ForSale,PhotoFrame
+]]></message>
+  <message priority="info"><![CDATA[LargeSize	: 800
+]]></message>
+  <message priority="info"><![CDATA[MainPageName	: index.html
+]]></message>
+  <message priority="info"><![CDATA[PageTitle	: Projects
+]]></message>
+  <message priority="info"><![CDATA[PhotoQuality	: 0.75
+]]></message>
+  <message priority="info"><![CDATA[PhotosDir	: C:\Users\Steve\personal\projectPhotos
+]]></message>
+  <message priority="info"><![CDATA[PhotosPageLink	: Projects
+]]></message>
+  <message priority="info"><![CDATA[RSSCreator	: Steve Donie
+]]></message>
+  <message priority="info"><![CDATA[RSSDescription	: All the freshest photos!
+]]></message>
+  <message priority="info"><![CDATA[RSSFeedName	: newphotos.xml
+]]></message>
+  <message priority="info"><![CDATA[RSSFeedTitle	: Steve's New Photos
+]]></message>
+  <message priority="info"><![CDATA[RSSImageURL	: avatar-rss.jpg
+]]></message>
+  <message priority="info"><![CDATA[SkipDirs	: .*\.svn\.*,
+]]></message>
+  <message priority="info"><![CDATA[SmallSize	: 200
+]]></message>
+  <message priority="info"><![CDATA[ThemeColor	: Green
+]]></message>
+  <message priority="info"><![CDATA[ThemeText	: White
+]]></message>
+  <message priority="info"><![CDATA[WebRootDir	: C:\Users\Steve\albums
+]]></message>
+  <message priority="info"><![CDATA[copyrightString	: All images copyright&copy; Steve Donie, all rights reserved. Do not use without permission.<br/>
+]]></message>
+  <message priority="info"><![CDATA[email	: steve@donie.us
+]]></message>
+  <message priority="info"><![CDATA[
+]]></message>
+  <message priority="info"><![CDATA[Directory C:\Users\Steve\personal\projectPhotos/ForSale has no jpg files!
+]]></message>
+  <message priority="info"><![CDATA[Directory C:\Users\Steve\personal\projectPhotos/origami has no jpg files!
+]]></message>
+  <message priority="info"><![CDATA[Directory C:\Users\Steve\personal\projectPhotos/ForSale has no jpg files!
+]]></message>
+  <message priority="info"><![CDATA[Directory PhotoFrame not in any known format, DirDisplayName is 'PhotoFrame'
+]]></message>
+  <message priority="info"><![CDATA[Total number of pictures is 175
+]]></message>
+  <message priority="info"><![CDATA[renaming LatestPics.projects.datical.txt to LatestPics.projects.datical.bak
+]]></message>
+  <message priority="progress"><![CDATA[Creating PhotoFrame (PhotoFrame)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2013-07Fountain (Fountain)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2013-04LEDLightBox (LED Light Box)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2013-04LEDDomeLight (LED Dome Light)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2013-03LEDClosetlights (LED Closet lights)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2013-01NewDogDoor (New Dog Door)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2010-09AMSSandandWatertable (AMS Sand and Water table)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2010-01AMSLibraryExpansion (AMS Library Expansion)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2009-11AMSFenceProject (AMS Fence Project)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2009-09TrailerProject (Trailer Project)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[Creating 2008-06HeadlightPolishing (Headlight Polishing)
+]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[!]]></message>
+  <message priority="progress"><![CDATA[
+]]></message>
+  <message priority="info"><![CDATA[No new photos added, renaming LatestPics.projects.datical.bak to LatestPics.projects.datical.txt
+]]></message>
+  <message priority="progress"><![CDATA[
+Checking size of C:\Users\Steve\albums\projects
+
+]]></message>
+  <message priority="info"><![CDATA[creating front page 'C:\Users\Steve\albums\projects/index.html'
+]]></message>
+  <message priority="info"><![CDATA[creating RSS feed '>C:\Users\Steve\albums\projects/newphotos.xml'
+]]></message>
+  <message priority="info"><![CDATA[There are a total of 103 tags that will be used to make pages
+]]></message>
+  <message priority="info"><![CDATA[Projects is 17.3 MBytes (175 pictures)
+]]></message>
+  <message priority="info"><![CDATA[Completed in 00:00:02
+]]></message>
+</album>

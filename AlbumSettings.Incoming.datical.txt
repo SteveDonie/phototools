@@ -29,10 +29,10 @@
   MainPageName => "index.html",
 
   # set title of main page, shown in titlebar of browser:
-  PageTitle => "Incoming!",
+  PageTitle => "Donie Family Photos",
 
   # set text of link to Photos Home:
-  PhotosPageLink => "Incoming!",
+  PhotosPageLink => "Donie Family Photos",
 
   # set email address:
   email => "steve\@donie.us",
@@ -93,7 +93,8 @@
 
 
   # directories to skip when making albums, can also include regular expressions
-  SkipDirs => ("iPod.*,originals,CellPhone,.*Rental Property Search"),
+  # directories to skip when making albums, can also include regular expressions
+  SkipDirs => (".*\\\.svn\\.*,logs,Examples,Extras,Projects,Employee Action Committee,WWSDC 2001,WWSDC 2000,Landmark.*,Reno.*,Julie.*,Baby.*,.*Old Photos Of Kaili.*,.*Moles.*,.*Show Posters.*,.*Keith.*,iPod.*,originals,CellPhone,.*Rental Property Search"),
 
   # Comma separated list of directories/patterns to include when making albums.
   # Can also include regular expressions.
