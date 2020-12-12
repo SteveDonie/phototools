@@ -60,7 +60,7 @@
   #                 album directory.
   # or "" to have no link
   BigPicLink => "httpfullsize",
-  FullSizeBaseURL => "http://album.donie.us/ProjectsFullSize/",
+  #FullSizeBaseURL => "http://album.donie.us/ProjectsFullSize/",
 
   # color to be used for bars, text, etc
   # can be an HTML color name or number

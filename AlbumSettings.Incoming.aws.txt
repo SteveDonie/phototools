@@ -16,7 +16,8 @@
 
   # if this is 1, all HTML pages will be generated each time.
   # if this is 0, then HTML pages will only be generated if they are needed - speeds things up a tiny bit.
-  CleanHTML => 1,
+  # If you change settings in this file then you may want to set to 1 one time.
+  CleanHTML => 0,
 
   # if this is 1, use jhead -autorot to automatically rotate ORIGINAL photos right side up.
   AutoRotate => 0,
