@@ -8,6 +8,7 @@ use File::Copy;
 use File::stat;
 use File::Basename;
 use File::Spec;
+use lib '.';
 
 # see that file for more details. Gets EXIF data for pictures.
 #require "getexif.pl";

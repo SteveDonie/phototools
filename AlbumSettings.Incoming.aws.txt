@@ -1,12 +1,12 @@
 {
   # set directory to find photos:
-  PhotosDir => "F:\\FolderShared\\SteveIncomingPhotos",
+  PhotosDir => "C:\\Users\\Steve\\Resilio Sync\\incomingPhotos", 
 
   # set directory where web album is generated:
-  AlbumDir => "\\\\vault\\Volume_1\\public\\photoframe\\incoming",
+  AlbumDir => "C:\\Users\\Steve\\albums\\incoming",
 
   # set largest dimension of large photos, in pixels:
-  LargeSize => 1024,
+  LargeSize => 800,
 
   # set largest dimension of large photos, in pixels:
   SmallSize => 200,
@@ -29,42 +29,45 @@
   MainPageName => "index.html",
 
   # set title of main page, shown in titlebar of browser:
-  PageTitle => "Gallery",
+  PageTitle => "Donie Family Photos",
 
   # set text of link to Photos Home:
-  PhotosPageLink => "Photo Album",
+  PhotosPageLink => "Donie Family Photos",
 
   # set email address:
-  email => "JudyDonie\@yahoo.com",
+  email => "steve\@donie.us",
 
   # copyright notice
-  copyrightString => "All images copyrighted&copy;, all rights reserved. Do not use without permission.",
+  copyrightString => "All images copyrighted &copy;, all rights reserved. Do not use without permission.",
 
   # This can be set to one of three values:
-  # request - large pictures have a mailto link that has a subject
-  #           line that requests the full size version of this photo.
-  #           This is good for posting to websites. Requires that the email
-  #           address be set to a valid email.
+  # request -       large pictures have a mailto link that has a subject
+  #                 line that requests the full size version of this photo.
+  #                 This is good for posting to websites. Requires that the email
+  #                 address be set to a valid email.
   # localfullsize - large pictures have a link to the local (filesystem) full size
-  #           image.
+  #                 image.
+  # httpfullsize -  find fullsize pictures at a URL that is based on a FullSizeBaseURL. If
+  #                 FullSizeBaseURL is not set, the full size images are copied into the
+  #                 album directory.
   # or "" to have no link
   BigPicLink => "httpfullsize",
-  FullSizeBaseURL => "http://donie.homeip.net:8080/GrandmaFullSize/",
+  #FullSizeBaseURL => "http://album.donie.us/IncomingFullSize/",
 
   # set filename for RSS feed:
   RSSFeedName => "newphotos.xml",
   # set title for RSS feed:
-  RSSFeedTitle => "Grandma's New Photos",
+  RSSFeedTitle => "The newest of the new",
   # set description for RSS feed:
-  RSSDescription => "Look what I did!",
+  RSSDescription => "New photos!",
   # set person who created this RSS feed:
-  RSSCreator => "Judy Donie",
+  RSSCreator => "Steve Donie",
   # URL of an image file (.GIF, .JPG, .PNG?) relative to your HomePageURL below
   RSSImageURL => "avatar-rss.jpg",
 
   # color to be used for bars, text, etc
   # can be an HTML color name or number
-  ThemeColor => "Red",
+  ThemeColor => "Blue",
 
   # color used for contrasting text in areas where
   # ThemeColor is used as a background.
@@ -82,24 +85,16 @@
   # set url of page to link "up" to
   # defaults to something one directory up,
   # but should probably be more absolute
-  HomePageURL => "http://donie.endofinternet.org/grandma/",
+  HomePageURL => "http://album.donie.us/",
 
   # url of Album page - a relative URL to the HomePage
   # it should have a trailing slash on it
-  AlbumPageURL => "album/",
-
-  # whether to make the small thumbnails or not
-  SkipThumbnails => "true",
-
-  # whether to make the html pages or not
-  SkipHTML => "true",
-
-  # whether to make tags pages or not
-  SkipTags => "true",
+  AlbumPageURL => "incoming/",
 
 
   # directories to skip when making albums, can also include regular expressions
-  SkipDirs => ("iPod.*,originals,CellPhone"),
+  # directories to skip when making albums, can also include regular expressions
+  SkipDirs => (".*\\\.svn\\.*,logs,Examples,Extras,Projects,Employee Action Committee,WWSDC 2001,WWSDC 2000,Landmark.*,Reno.*,Julie.*,Baby.*,.*Old Photos Of Kaili.*,.*Moles.*,.*Show Posters.*,.*Keith.*,iPod.*,originals,CellPhone,.*Rental Property Search"),
 
   # Comma separated list of directories/patterns to include when making albums.
   # Can also include regular expressions.
