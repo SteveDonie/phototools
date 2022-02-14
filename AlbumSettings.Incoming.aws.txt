@@ -1,6 +1,6 @@
 {
   # set directory to find photos:
-  PhotosDir => "C:\\Users\\Steve\\Resilio Sync\\incomingPhotos", 
+  PhotosDir => "C:\\Users\\Steve\\Resilio Sync\\incomingPhotos",
 
   # set directory where web album is generated:
   AlbumDir => "C:\\Users\\Steve\\albums\\incoming",
@@ -36,7 +36,7 @@
   PhotosPageLink => "Donie Family Photos",
 
   # set email address:
-  email => "steve\@donie.us",
+  email => "none",
 
   # copyright notice
   copyrightString => "All images copyrighted &copy;, all rights reserved. Do not use without permission.",

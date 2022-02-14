@@ -32,7 +32,7 @@
   PhotosPageLink => "Projects",
 
   # set email address:
-  email => "steve\@donie.us",
+  email => "none",
 
   # copyright notice
   copyrightString => "All images copyright&copy; Steve Donie, all rights reserved. Do not use without permission.<br/>",
