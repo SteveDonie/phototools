@@ -166,7 +166,7 @@ sub get_config ()
         die "Configuration file AlbumSettings.".$specifiedConfig.".txt not found.\nExiting";
       }
     }
-  } else { 
+  } else {
     # no configuration specified. Check Machine Name
     if ($machineName) {
       if ($machineName ne "") {
@@ -470,16 +470,21 @@ sub make_dirs()
   # Now use FinalOutputDirs to make album pages.
   for (my $index = 0; $index < @FinalOutputDirs; $index++) {
     my $outputDir = $FinalOutputDirs[$index];
+
     my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
     my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
-    
+
+    my $oneYearForwardDir = $index <= 12 ? "" : $FinalOutputDirs[$index - 12];
+    my $oneYearPrevDir = $index >= @FinalOutputDirs-12 ? "" : $FinalOutputDirs[$index+12];
+
     if (! -e $config->{AlbumDir}."/".$outputDir) {
       &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
       mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
     }
 
     &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir'\n","verbose");
-    &MakePage ($outputDir,$prevDir,$nextDir);
+    NEED TO ADD TWO MORE PARAMS FOR PREV YEAR AND NEXT YEAR
+    &MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
   }
 
   # if there is no LatestPics.configname.txt, then it must be because there were no new photos
@@ -497,8 +502,13 @@ sub make_dirs()
 # Make thumbnails, html files, and and index html file for a certain
 # Output Directory, using all the photos in all its input directories.
 #
-# Takes 1 argument, the OutputDirectory, which is a UnixValidDirName, and is
-# used as a key into the OutDirsHash and OutDirsDisplayNames hash.
+# Takes 5 arguments
+#   - the OutputDirectory, which is a UnixValidDirName, and is
+#     used as a key into the OutDirsHash and OutDirsDisplayNames hash.
+#   - the previousOutputDir, also a UnixValidDirName
+#   - the nextOutputDir, also a UnixValidDirName
+#   - the oneYearPreviousOutputDir (same)
+#   - the oneYearForwardOutputDir (same)
 #
 # This function is FAR too large, but it would be a pain to refactor, because it
 # uses a lot of arrays that are needed all the way through. Those arrays should be
@@ -517,7 +527,7 @@ sub make_dirs()
 # large picture in the middle, plus thumbnails to the left and right - this allows
 # the user to easily 'flip' through the photos.
 #
-#ComeBackHere 
+#ComeBackHere
 sub MakePage ()
 {
   my $NeedNewHTML = 0; # if 1, means pictures were added, so need new index page and
@@ -528,6 +538,8 @@ sub MakePage ()
   my $OutputDir = $_[0];  # will have unix valid dir name of output dir. Key to OutDirsHash, which has a list of input dirs.
   my $PrevOutDir = $_[1];
   my $NextOutDir = $_[2];
+  my $OneYearPrevOutDir = $_[3];
+  my $OneYearForwardOutDir = $_[4];
 
   my $BasePhotosDir = $config->{PhotosDir};
 
@@ -617,10 +629,10 @@ sub MakePage ()
 
   my @inputDirs = @{ $OutDirsHash{$OutputDir} };
   @filenames = ();
-  foreach my $inputDir (@inputDirs) 
+  foreach my $inputDir (@inputDirs)
   {
     &log ("    processing files in $inputDir\n","verbose");
-    
+
     # first create the array of JPG files we need to process in the original
     # photos dir.
     my $fullInputDir = $BasePhotosDir."/".$inputDir;
@@ -629,10 +641,10 @@ sub MakePage ()
                            /jpg$/i
                           } readdir(DIR);
     closedir DIR;
-    
+
     foreach my $file (@unsortedfiles) {
     		$file = $inputDir."/".$file;
-    }    
+    }
 
     @filenames = (@filenames, @unsortedfiles);
   }
@@ -640,7 +652,7 @@ sub MakePage ()
   # need to sort filenames
   @filenames = sort (@filenames);
 
-  # debugging output    
+  # debugging output
   &log ("\nInput files for $DirDisplayName\n","debug");
   for $picfilename (@filenames) {
       &log ("  $picfilename\n","debug");
@@ -685,7 +697,7 @@ sub MakePage ()
         die "jhead -autorot returned $RetVal, which is bad!\n";
       }
     }
-  
+
     if (!-e $HTMLFileNames[$index] or
         &FileTimeIsNewer($CaptionFileNames[$index],$HTMLFileNames[$index]))
     {
@@ -764,7 +776,7 @@ sub MakePage ()
     &log ("returned $RetVal\n","debug");
     &log ("\n","progress");
   }
-  
+
   #---- this is a hack! ----------
   # I made the java thumbnailer write out a .info file for each picture that has its
   # size. Need to read all those in and add that info to our master arrays. Need a better data structure...
@@ -775,7 +787,7 @@ sub MakePage ()
   # <!-- INFO:height -->
   # 600
   &log ("getting widths and heights\n","debug");
-  
+
   for ($index = 0; $index < @filenames; $index++)
   {
     $picWidths[$index] = 800;
@@ -873,7 +885,7 @@ sub MakePage ()
   }
 
   &log ("about to make HTML\n","debug");
-  
+
   my $numPhotos = @filenames;
   $CurrentPageName = $OutputDir;
   if ($NeedNewHTML and !$config->{"SkipHTML"})
@@ -969,7 +981,7 @@ HTML
 
   my $PageWidth = $config->{SmallSize} + $config->{SmallSize} + $picWidths[$index] + 24;
   $PageWidth = $PageWidth . "px";
-  
+
 $HTML = <<HTML;
   <body>
     <div id="header">
@@ -1101,8 +1113,12 @@ HTML
       # stuff to go forward and backwards through months
       my $previousLink;
       my $previousCell = "&nbsp;";
+      my $oneYearPreviousLink;
+      my $oneYearPreviousCell = "&nbsp;";
       my $nextLink;
       my $nextCell = "&nbsp;";
+      my $oneYearForwardLink;
+      my $oneYearForwardCell = "&nbsp;";
 
       my $PrevDirDisplayName = $OutDirsDisplayNames{$PrevOutDir};
       if (defined $PrevDirDisplayName && "" ne $PrevDirDisplayName) {
@@ -1114,6 +1130,18 @@ HTML
       if (defined $NextDirDisplayName && "" ne $NextDirDisplayName) {
         $nextLink = "../$NextOutDir/$NextOutDir.html";
         $nextCell = "<a href=\"$nextLink\">$NextDirDisplayName &gt;</a>";
+      }
+
+      my $OneYearPrevDirDisplayName = $OutDirsDisplayNames{$OneYearPrevOutDir};
+      if (defined $OneYearPrevDirDisplayName && "" ne $OneYearPrevDirDisplayName) {
+        $oneYearPreviousLink = "../$OneYearPrevOutDir/$OneYearPrevOutDir.html";
+        $oneYearPreviousCell = "<a href=\"$oneYearPreviousLink\">&lt; $OneYearPrevDirDisplayName</a>";
+      }
+
+      my $OneYearForwardDirDisplayName = $OutDirsDisplayNames{$OneYearForwardOutDir};
+      if (defined $OneYearForwardDirDisplayName && "" ne $OneYearForwardDirDisplayName) {
+        $oneYearForwardLink = "../$OneYearForwardOutDir/$OneYearForwardOutDir.html";
+        $oneYearForwardCell = "<a href=\"$oneYearForwardLink\">$oneYearForwardDirDisplayName &gt;</a>";
       }
 
       open (OUTFILE,">".$filename);
@@ -1185,10 +1213,12 @@ HTML
 $HTML = <<HTML;
     <div id="block_2">
          <div class="leftalign">
+            $oneYearPreviousCell
             $previousCell
           </div>
           <div class="rightalign">
             $nextCell
+            $oneYearForwardCell
           </div>
           <div class="spacer"/>
 HTML
@@ -1314,7 +1344,7 @@ HTML
     if (!$config->{"SkipHTML"}) {
        $DesiredAlbumFiles[$indexB++]="$NewFileNames[$indexA].htm";
     }
-    
+
     if ($config->{BigPicLink} eq "httpfullsize") {
       if (!$config->{FullSizeBaseURL}) {
         $DesiredAlbumFiles[$indexB++]="$NewFileNames[$indexA]_lg.jpg";
@@ -2728,7 +2758,7 @@ sub ReadCaptionFile()
 
 #----------------------------------------------------------------------------
 # this needs some 'splainin, lucy.
-# 
+#
 sub GetPictureInfo ()
 {
   my $loglevel="debug";
