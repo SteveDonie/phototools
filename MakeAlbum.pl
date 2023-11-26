@@ -2456,24 +2456,31 @@ sub report_size ()
   my $AlbumSize = shift;
   my $message;
 
-  if ($AlbumSize > 1048576)
+  if ($AlbumSize > 1073741824) 
   {
-   my $MBSize = $AlbumSize / 1048576;
-   $message = sprintf "%.1f MBytes",$MBSize;
+    my $GBSize = $AlbumSize / 1073741824;
+   $message = sprintf "%.1f GBytes",$GBSize;
   }
-  else
-  {
-    if ($AlbumSize > 1024)
-    {
-     my $KBSize = $AlbumSize / 1024;
-     $message = sprintf "%.0f KBytes",$KBSize;
-    }
-    else
-    {
-     $message = "$AlbumSize Bytes";
-    }
+  else {	  
+	  if ($AlbumSize > 1048576)
+	  {
+	   my $MBSize = $AlbumSize / 1048576;
+	   $message = sprintf "%.1f MBytes",$MBSize;
+	  }
+	  else
+	  {
+		if ($AlbumSize > 1024)
+		{
+		 my $KBSize = $AlbumSize / 1024;
+		 $message = sprintf "%.0f KBytes",$KBSize;
+		}
+		else
+		{
+		 $message = "$AlbumSize Bytes";
+		}
+	  }
   }
-  return $message;
+	  return $message;
 }
 
 #-----------------------------------------------------------------------------
