@@ -464,7 +464,7 @@ sub make_dirs()
         rmdir $goner or warn "WARNING: can't delete directory '$config->{AlbumDir}/$dir' $!";
       }
     }
-    &log ("Done deleting directories.\n","info");
+    &log ("Done deleting directories.\n\n","info");
   }
 
   # Now use FinalOutputDirs to make album pages.
@@ -473,17 +473,29 @@ sub make_dirs()
 
     my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
     my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
+	my $oneYearForwardDir = "";
+	my $oneYearPrevDir = "";
 
-    my $oneYearForwardDir = $index <= 12 ? "" : $FinalOutputDirs[$index - 12];
-    my $oneYearPrevDir = $index >= @FinalOutputDirs-12 ? "" : $FinalOutputDirs[$index+12];
+	# I would like the prev year and next year to only be for directories (source and target) that are month-like,
+	# and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
+	if (DirIsMonthLike($outputDir)) {
+		my $FinalOutputDirCount = @FinalOutputDirs;
+		$oneYearForwardDir = GetSameMonthNextYear($outputDir);
+		$oneYearPrevDir = GetSameMonthPrevYear($outputDir);
+		if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
+			$oneYearForwardDir = "";
+		}
+		if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
+			$$oneYearPrevDir = "";
+		}
+	}
 
     if (! -e $config->{AlbumDir}."/".$outputDir) {
       &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
       mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
     }
 
-    &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir'\n","verbose");
-    NEED TO ADD TWO MORE PARAMS FOR PREV YEAR AND NEXT YEAR
+    &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
     &MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
   }
 
@@ -498,6 +510,37 @@ sub make_dirs()
   }
 }
 
+# Given a directory, return true or false. If the directory is just a month and year, then
+# return true, otherwise return false.
+sub DirIsMonthLike ()
+{
+	my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
+	my $retval = $DirToCheck =~ /^\d\d\d\d-\d\d$/;	
+	return $retval;
+}
+
+# Given a directory, get the directory that represents the same month next year
+sub GetSameMonthNextYear ()
+{
+	my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
+	my $matches = $DirToCheck =~ /^(\d\d\d\d)-(\d\d$)/;
+	my $currentYear = $1;
+	my $currentMonth = $2;
+	my $nextYear = $currentYear + 1;
+	return $nextYear."-".$currentMonth;
+}
+
+# Given a directory, get the directory that represents the same month previous year
+sub GetSameMonthPrevYear ()
+{
+	my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
+	my $matches = $DirToCheck =~ /^(\d\d\d\d)-(\d\d$)/;
+	my $currentYear = $1;
+	my $currentMonth = $2;
+	my $prevYear = $currentYear - 1;
+	return $prevYear."-".$currentMonth;
+}
+
 #-----------------------------------------------------------------------------
 # Make thumbnails, html files, and and index html file for a certain
 # Output Directory, using all the photos in all its input directories.
@@ -509,8 +552,8 @@ sub make_dirs()
 #   - the nextOutputDir, also a UnixValidDirName
 #   - the oneYearPreviousOutputDir (same)
 #   - the oneYearForwardOutputDir (same)
-#
 # This function is FAR too large, but it would be a pain to refactor, because it
+#
 # uses a lot of arrays that are needed all the way through. Those arrays should be
 # refactored to be one simpler data structure, but I am not sure what to make that
 # look like.
@@ -1110,7 +1153,7 @@ HTML
         &log ("!","progress");
       }
 
-      # stuff to go forward and backwards through months
+      # stuff to go forward and backwards through months and years
       my $previousLink;
       my $previousCell = "&nbsp;";
       my $oneYearPreviousLink;
@@ -1141,7 +1184,7 @@ HTML
       my $OneYearForwardDirDisplayName = $OutDirsDisplayNames{$OneYearForwardOutDir};
       if (defined $OneYearForwardDirDisplayName && "" ne $OneYearForwardDirDisplayName) {
         $oneYearForwardLink = "../$OneYearForwardOutDir/$OneYearForwardOutDir.html";
-        $oneYearForwardCell = "<a href=\"$oneYearForwardLink\">$oneYearForwardDirDisplayName &gt;</a>";
+        $oneYearForwardCell = "<a href=\"$oneYearForwardLink\">$OneYearForwardDirDisplayName &gt;</a>"; 
       }
 
       open (OUTFILE,">".$filename);
@@ -1213,12 +1256,14 @@ HTML
 $HTML = <<HTML;
     <div id="block_2">
          <div class="leftalign">
-            $oneYearPreviousCell
             $previousCell
+			&nbsp;
+            $oneYearPreviousCell
           </div>
           <div class="rightalign">
-            $nextCell
             $oneYearForwardCell
+			&nbsp;
+            $nextCell
           </div>
           <div class="spacer"/>
 HTML
