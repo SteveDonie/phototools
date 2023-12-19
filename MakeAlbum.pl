@@ -2235,6 +2235,8 @@ sub makeTagPage()
   my $filename=">".$config->{AlbumDir}."/tags/".$thisTag.".html";
 
   &log ("creating tag page '$filename'\n","verbose");
+  &log ("!","progress");
+
   open (OUTFILE,$filename) or die "can't create $filename for tag page $!";
 
 $HTML = <<HTML;
@@ -2341,6 +2343,7 @@ HTML
   print (OUTFILE &PageFooter());
   print (OUTFILE "</body>\n</html>\n");
   close OUTFILE;
+  &log ("\n","progress");
 
   #die "end of test";
 }
@@ -2558,6 +2561,7 @@ sub copyifnewer ()
   }
   my $DestFile = $directory."/".$newfilename;
 
+  my $wasCopied = 0;
   if (-e $DestFile)
   {
     my $SourceFileStat = stat($filename);
@@ -2566,12 +2570,15 @@ sub copyifnewer ()
     {
       unlink $DestFile;
       copy $filename, $DestFile or die "Couldn't copy $filename to $DestFile: $!";
+	  $wasCopied = 1;
     }
   }
   else
   {
     copy $filename, $DestFile or die "Couldn't copy $filename to $DestFile: $!";
+	$wasCopied = 1;
   }
+  return $wasCopied;
 }
 
 #----------------------------------------------------------------------------------
