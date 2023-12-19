@@ -486,7 +486,7 @@ sub make_dirs()
 			$oneYearForwardDir = "";
 		}
 		if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
-			$$oneYearPrevDir = "";
+			$oneYearPrevDir = "";
 		}
 	}
 
@@ -1124,8 +1124,9 @@ HTML
     if (!$config->{FullSizeBaseURL}) {
       for ($index = 0; $index < @filenames; $index++)
       {
-      	&log ("*","progress");
-        &copyifnewer ($InputPicFileFullNames[$index],$NewFullDir,$NewFileNames[$index]."_lg.jpg");
+        if (&copyifnewer ($InputPicFileFullNames[$index],$NewFullDir,$NewFileNames[$index]."_lg.jpg")) {
+          &log ("*","progress");
+		}
       }
       	&log ("\n","progress");
     }

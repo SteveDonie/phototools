@@ -15,7 +15,8 @@
 
 div.float {
   float: left;
-  width: 220px; // must be a variable, or set w/ javascript?
+  width: 220px; 
+  height: 260px;
   }
 
 .centeredImage     {
@@ -27,6 +28,7 @@ div.float {
 
 .picCaption {
   text-align: center;
+  margin-block-start: 0.2em;
   }
 
 div.container {

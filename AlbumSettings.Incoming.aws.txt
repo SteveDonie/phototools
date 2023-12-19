@@ -18,6 +18,9 @@
   # if this is 0, then HTML pages will only be generated if they are needed - speeds things up a tiny bit.
   # If you change settings in this file then you may want to set to 1 one time.
   CleanHTML => 0,
+  
+  # skip making the HTML for the pages and the slideshow
+  SkipHTML => 0,
 
   # if this is 1, use jhead -autorot to automatically rotate ORIGINAL photos right side up.
   AutoRotate => 0,

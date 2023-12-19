@@ -1,0 +1,22 @@
+started at 12/18/2023 10:07
+Time to make Incoming
+
+real	20m54.686s
+user	11m33.234s
+sys	3m14.578s
+Time to make Eastdale
+
+real	0m17.663s
+user	0m0.699s
+sys	0m2.947s
+Time to make Projects
+
+real	0m6.447s
+user	0m0.374s
+sys	0m1.687s
+Time to sync to S3
+
+real	3m29.799s
+user	0m0.061s
+sys	0m0.091s
+finished at 12/18/2023 10:32
