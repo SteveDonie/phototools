@@ -114,9 +114,15 @@ open (XMLLOG,">".$XMLLogName);
 &calc_final_dirs ();
 &GetStopWords (); # have to do this here so stopwords aren't added during photo processing
 &make_dirs ();
-&log ("\nChecking size of $config->{AlbumDir}\n\n","progress");
-$AlbumSize=&calc_size($config->{AlbumDir});
-$SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
+# another check of SkipDirs to make iteration on front page changes faster
+if (! $config->{SkipMakeDirs}) {
+	&log ("\nChecking size of $config->{AlbumDir}\n\n","progress");
+	$AlbumSize=&calc_size($config->{AlbumDir});
+	$SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
+} else {
+	$AlbumSize=100000;  # made up number
+	$SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
+}	
 &make_frontpage ($SizeMessage);
 &make_tagspages ();
 &log ("$SizeMessage\n","info");
@@ -467,38 +473,43 @@ sub make_dirs()
     &log ("Done deleting directories.\n\n","info");
   }
 
+  # DEBUGING MAKE FRONT PAGE - skip all the inner pages
+  if (! $config->{SkipMakeDirs}) {
   # Now use FinalOutputDirs to make album pages.
-  for (my $index = 0; $index < @FinalOutputDirs; $index++) {
-    my $outputDir = $FinalOutputDirs[$index];
+	  for (my $index = 0; $index < @FinalOutputDirs; $index++) {
+		my $outputDir = $FinalOutputDirs[$index];
 
-    my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
-    my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
-	my $oneYearForwardDir = "";
-	my $oneYearPrevDir = "";
+		my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
+		my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
+		my $oneYearForwardDir = "";
+		my $oneYearPrevDir = "";
 
-	# I would like the prev year and next year to only be for directories (source and target) that are month-like,
-	# and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
-	if (DirIsMonthLike($outputDir)) {
-		my $FinalOutputDirCount = @FinalOutputDirs;
-		$oneYearForwardDir = GetSameMonthNextYear($outputDir);
-		$oneYearPrevDir = GetSameMonthPrevYear($outputDir);
-		if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
-			$oneYearForwardDir = "";
+		# I would like the prev year and next year to only be for directories (source and target) that are month-like,
+		# and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
+		if (DirIsMonthLike($outputDir)) {
+			my $FinalOutputDirCount = @FinalOutputDirs;
+			$oneYearForwardDir = GetSameMonthNextYear($outputDir);
+			$oneYearPrevDir = GetSameMonthPrevYear($outputDir);
+			if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
+				$oneYearForwardDir = "";
+			}
+			if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
+				$oneYearPrevDir = "";
+			}
 		}
-		if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
-			$oneYearPrevDir = "";
+
+		if (! -e $config->{AlbumDir}."/".$outputDir) {
+		  &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
+		  mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
 		}
-	}
 
-    if (! -e $config->{AlbumDir}."/".$outputDir) {
-      &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
-      mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
-    }
-
-    &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
-    &MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
+		&log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
+		&MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
+	  }
+  } else {
+	  &log ("\nSkipping making directory pages because SkipMakeDirs is true\n\n","info");
   }
-
+  
   # if there is no LatestPics.configname.txt, then it must be because there were no new photos
   # added, so check if the .bak file is around and re-use that one.
   # BUGBUG - if no new photos were added, but captions were added, the front page won't
@@ -1029,9 +1040,9 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
-        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>
-        <a href="$CurrentPageName.html">$DirDisplayName</a>
+        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
+        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>&nbsp;
+        <a href="$CurrentPageName.html">$DirDisplayName</a>&nbsp;
         <a href="javascript:void(window.open('slideshow.html?$index','slidecontrol','width=133,height=112,top=10,left=10,screenx=10,screeny=10'))">slideshow</a>
       </div>
 HTML
@@ -1209,9 +1220,9 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
-        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>
-        <a href="$CurrentPageName.html">$DirDisplayName</a>
+        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
+        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>&nbsp;
+        <a href="$CurrentPageName.html">$DirDisplayName</a>&nbsp;
         <a href="javascript:void(window.open('slideshow.html?$index','slidecontrol','width=133,height=112,top=10,left=10,screenx=10,screeny=10'))">slideshow</a>
       </div>
 HTML
@@ -1550,15 +1561,38 @@ $HTMLDeclaration
     <link href="TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="basic.css" rel="stylesheet" type="text/css">
     <link rel="alternate" type="application/rss+xml" title="$config->{RSSDescription}" href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}" />
+    <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
   </head>
   <body>
-    <div id="header">
-      <div class="toptitle"><a href="$config->{HomePageURL}">$config->{HomePageName}</a> $config->{PageTitle}</div>
+    <div id="header" class="fullwidthcontainer">
+      <div class="toptitle"><a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;$config->{PageTitle}</div>
       <div class="rightalign">
+		<input onclick="change();showhide()" type="button" value="Show Login" id="LoginButton"></input>
+		<div id="LoggedInUser">&nbsp;</div>
+		&nbsp;&nbsp;
         <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a><br/>
-        <a href="http://add.my.yahoo.com/rss?url=$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="Add this to your My Yahoo Page" src="AddToYahoo.gif"></a>
       </div>
       <div class="spacer"/>
+
+	  <div class="toggle-div hidden" id="authforms">
+		Login
+		<form id="login-form">
+			<input id="login-username" type="text" required placeholder="Username">
+			<input id="login-password" type="password" required placeholder="Password">
+			<input type="submit" value="Sign in">
+		</form>
+		<div id="login-error"></div>
+
+		Create an account
+		<form id="signup-form">
+			<input id="signup-username" type="text" required placeholder="Username">
+			<input id="signup-email" type="text" required placeholder="email">
+			<input id="signup-password" type="password" required placeholder="Password">
+			<input type="submit" value="Create an account">
+		</form>
+		<div id="signup-error"></div>
+	  </div>
+
       <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
       <div>
         <b class="spiffy">
@@ -1582,7 +1616,98 @@ $HTMLDeclaration
       </div>
     </div>
     <div class="spacer"/>
-    <div id="wrapper">
+
+	<!-- application code -->
+	<script type="text/javascript">
+	userbase.init({ appId: '$config->{UserBaseAppId}' })
+		.then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
+		.catch(() => resetAuthFields())
+	
+	
+	function change() {
+	  var x = document.querySelectorAll("#button");
+	  var i;
+	  for (i = 0; i < x.length; i++) {
+		if (x[i].value == "Show Login") {
+		  x[i].value = "Hide Login";
+		} else {
+		  x[i].value = "Show Login";
+		}
+	  }
+	}
+
+	// Toggle show and hide divs
+
+	function showhide() {
+	  var x = document.querySelectorAll(".toggle-div");
+	  for (var i = 0; i < x.length; i++) {
+		x[i].classList.toggle('hidden');
+	  }
+	}
+	
+	function handleSignUp(e) {
+		e.preventDefault()
+
+		const username = document.getElementById('signup-username').value
+		const password = document.getElementById('signup-password').value
+		const email = document.getElementById('signup-email').value
+
+		userbase.signUp({ username, password, email, rememberMe: 'local' })
+		  .then((user) => showUserLoggedIn(user.username))
+		  .catch((e) => document.getElementById('signup-error').innerHTML = e)	  
+	}
+
+	function handleLogin(e) {
+		e.preventDefault()
+
+		const username = document.getElementById('login-username').value
+		const password = document.getElementById('login-password').value
+
+		userbase.signIn({ username, password, rememberMe: 'none' })
+			.then((user) => showUserLoggedIn(user.username))
+			.catch((e) => document.getElementById('login-error').innerHTML = e)
+	}
+
+	function showUserLoggedIn(username) {
+		change()
+		showhide()
+		document.getElementById('LoginButton').style.display = 'none'
+		document.getElementById('LoggedInUser').style.display = 'block';
+		document.getElementById('LoggedInUser').innerHTML = "logged in as <a href=\\"#\\">" + username + "</a>";
+	}
+
+	function handleLogout() {
+		userbase.signOut()
+		  .then(() => resetAuthFields())
+		  .catch((e) => document.getElementById('logout-error').innerText = e)
+	}
+	
+	function resetAuthFields() {
+		document.getElementById('login-username').value = ''
+		document.getElementById('login-password').value = ''
+		document.getElementById('login-error').innerText = ''
+		document.getElementById('signup-username').value = ''
+		document.getElementById('signup-password').value = ''
+		document.getElementById('signup-email').value = ''
+		document.getElementById('signup-error').innerText = ''
+		document.getElementById('LoggedInUser').innerText = ''
+		document.getElementById('LoginButton').style.display = 'block'
+		document.getElementById('LoggedInUser').style.display = 'none';
+	}
+
+	document.getElementById('signup-form').addEventListener('submit', handleSignUp)
+	document.getElementById('login-form').addEventListener('submit', handleLogin)
+	document.getElementById('LoggedInUser').style.display = 'none';
+	
+	var logoutLink = document.getElementById('LoggedInUser')
+	logoutLink.onclick = function() { 
+		handleLogout()
+		return false;
+	}
+
+	</script>
+    
+	<div id="wrapper">
 HTML
   print (OUTFILE $HTML);
 
@@ -1974,7 +2099,7 @@ sub make_tagspages ()
 
   $filename=">".$config->{AlbumDir}."/tags.html";
 
-  &log ("creating tags page '$filename'\n","debug");
+  &log ("creating tags page '$filename'\n","info");
   open (OUTFILE,$filename);
 
 $HTML = <<HTML;
@@ -1988,7 +2113,7 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
+         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
          <a href="$config->{MainPageName}">$config->{PageTitle}</a>
          Tags
       </div>
@@ -2027,6 +2152,8 @@ HTML
       <p class="TagsBox">
 HTML
     print (OUTFILE $HTML);
+
+  &log ("Calculating tag buckets\n","info");
 
   # tags go here
 
@@ -2147,11 +2274,13 @@ HTML
 
   # create each tag page...
   # do in a seperate loop to be able to use OUTFILE in call, all over
+  &log ("creating pages for each tag\n","info");
+
   for $tag (keys %tagshash)
   {
      &makeTagPage($tag);
   }
-
+  &log ("\n","progress");	
 }
 
 #-----------------------------------------------------------------------------
@@ -2250,9 +2379,9 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
-         <a href="../$config->{MainPageName}">$config->{PageTitle}</a>
-         <a href="../tags.html">Tags</a>
+         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
+         <a href="../$config->{MainPageName}">$config->{PageTitle}</a>&nbsp;
+         <a href="../tags.html">Tags</a>&nbsp;
          $thisTag
       </div>
       <div class="spacer"/>
@@ -2343,7 +2472,6 @@ HTML
   print (OUTFILE &PageFooter());
   print (OUTFILE "</body>\n</html>\n");
   close OUTFILE;
-  &log ("\n","progress");
 
   #die "end of test";
 }

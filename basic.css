@@ -43,9 +43,9 @@ div.spacer {
 /* styles for headings, used various places... */
 /* toptitle is used for the top title/breadcrumb line */
 div.toptitle {
-    display:float;
+    display:flex;
     float:left;
-    width: 90%;
+    width: 75%;
     font-style: italic;
     font-weight: bold;
     font-size: 1.5em;
@@ -55,7 +55,7 @@ div.toptitle {
 /* instructionlineleft is used for the instructions, etc. */
 div.instructionlineleft
 {
-    display:float;
+    display:flex;
     float:left;
     text-align: left;
     padding-left: 5px;
@@ -65,16 +65,24 @@ div.instructionlineleft
 /* instructionlineright is used for the instructions, etc. */
 div.instructionlineright
 {
-    display: float;
+    display: flex;
     padding-right: 5px;
     text-align: right;
     color: white;
 }
 
+.fullwidthcontainer
+{
+	height: 2em;
+	position: relative;
+}
+
 div.rightalign
 {
-    display:float;
-    float:right;
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  height: 2em;
 }
 
 div.leftalign
@@ -83,9 +91,20 @@ div.leftalign
     float:left;
 }
 
+/* for showing/hiding the login and registration form */
+div.toggle-div {
+  transition: 1s ease-out;
+  height: 85px;
+  overflow: hidden;
+}
+
+div.hidden {
+  height: 0;
+}
+
 .Latest
 {
-  display: float;
+  display: flex;
   float: left;
   font-size: 1.2em;
   font-weight: normal;
@@ -95,7 +114,7 @@ div.leftalign
 
 .LatestTime
 {
-  display: float;
+  display: flex;
   float: right;
   font-size: .7em;
   font-weight: normal;
