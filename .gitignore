@@ -1,3 +1,5 @@
 LatestPics*.txt 
 TempResizeList*
 MakeAlbumLog*
+*.bak
+timing.txt
