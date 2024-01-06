@@ -97,10 +97,6 @@ my @stopwords;      # an array of stop words, not used for tags
 my %is_stopword;    # hash made from that array since I'm a dummy and don't know how to do it directly,
                     # so I did what it said in perlfaq4 about finding an element in a list.
 
-my $DocTypeDeclaration = "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"
-            \"http://www.w3.org/TR/html4/loose.dtd\" >";
-my $HTMLDeclaration = "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">";
-my $XHTMLDeclaration = "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">";
 
 ###############################################################################
 ## main execution starts here
@@ -1023,8 +1019,8 @@ sub MakePage ()
         }
 
 my $HTML = <<HTML;
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
   <head>
     <title>$DirDisplayName</title>
     <link href="../TwoColumn.css" rel="stylesheet" type="text/css">
@@ -1040,9 +1036,9 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
-        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>&nbsp;
-        <a href="$CurrentPageName.html">$DirDisplayName</a>&nbsp;
+        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
+        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>
+        <a href="$CurrentPageName.html">$DirDisplayName</a>
         <a href="javascript:void(window.open('slideshow.html?$index','slidecontrol','width=133,height=112,top=10,left=10,screenx=10,screeny=10'))">slideshow</a>
       </div>
 HTML
@@ -1200,14 +1196,14 @@ HTML
       }
 
       open (OUTFILE,">".$filename);
-      &log ("$config->{PageTitle} - $DirDisplayName","debug");
-      &log ("$config->{HomePageURL}, $config->{HomePageName}","debug");
-      &log ("$index","debug");
-      &log ("$DirDisplayName has $numPhotos photos ($PageSize)","debug");
+      &log ("  $config->{PageTitle} - $DirDisplayName\n","debug");
+      &log ("  $config->{HomePageURL}, $config->{HomePageName}\n","debug");
+      &log ("  $index\n","debug");
+      &log ("  $DirDisplayName has $numPhotos photos ($PageSize)\n","debug");
 
 my $HTML = <<HTML;
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
   <head>
     <title>$config->{PageTitle} - $DirDisplayName</title>
     <link href="../TwoColumn.css" rel="stylesheet" type="text/css">
@@ -1220,9 +1216,9 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
-        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>&nbsp;
-        <a href="$CurrentPageName.html">$DirDisplayName</a>&nbsp;
+        <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
+        <a href="../$config->{MainPageName}">$config->{PhotosPageLink}</a>
+        <a href="$CurrentPageName.html">$DirDisplayName</a>
         <a href="javascript:void(window.open('slideshow.html?$index','slidecontrol','width=133,height=112,top=10,left=10,screenx=10,screeny=10'))">slideshow</a>
       </div>
 HTML
@@ -1337,8 +1333,10 @@ HTML
       while (<SLIDEFILE>)
       {
         chomp;
-        if ($_ eq "-- INFOHERE --")
+		my $infoHereTag = "-- INFOHERE --";
+		if (substr($_, 0, length($infoHereTag)) eq $infoHereTag)
         {
+          &log ("Found INFOHERE tag, adding to OUTSLIDEFILE\n","debug");
           for ($index = 0; $index < @filenames; $index++)
           {
             #while processing captions, need to escape stuff to make valid urls
@@ -1347,6 +1345,8 @@ HTML
             ($CaptionURL = $picCaptions[$index]) =~ s/ /%20/g;
             ($CaptionURL = $CaptionURL) =~ s/\"/&quot;/g;
             ($CaptionURL = $CaptionURL) =~ s/\'/&rsquo;/g;
+            ($CaptionURL = $CaptionURL) =~ s/\n//g;
+            ($CaptionURL = $CaptionURL) =~ s/\r//g;
             &log ("CaptionURL is $CaptionURL\n","debug");
             print (OUTSLIDEFILE "new picInfo(\"$NewFileNames[$index].jpg\", \"$CaptionURL\", \"$NewFileNames[$index].htm\", $picWidths[$index], $picHeights[$index])");
             if ($index + 1 < @filenames)
@@ -1358,10 +1358,11 @@ HTML
         }
         else
         {
+          &log ("Found regular line to add to OUTSLIDEFILE: '$_'\n","debug");
           print (OUTSLIDEFILE "$_\n");
         }
       }
-    }
+	}
     close (SLIDEFILE);
     close (OUTSLIDEFILE);
   }
@@ -1484,6 +1485,8 @@ sub PrintNavTable ()
   my $LinkDisplayName;
   my $UnixValidDirName;
   my $BaseURL;
+  my $HTML;
+
 
   if ($DirDisplayName eq " ") {
     $BaseURL = "";
@@ -1495,7 +1498,49 @@ sub PrintNavTable ()
 
   print (OUTFILE "  <div id=\"block_1\">\n    <div class=\"NavTable\">\n");
 
-  # tags is always listed first
+$HTML = <<HTML;
+      <script>
+        window.onload = function(){
+          document.getElementById(\"RandomPageLink\").onclick = function(){
+                 if(showRandomPage()){
+                     // most important step in this whole process
+                     return false;
+                 }
+          }
+          console.log('added function to RandomPageLink');
+        }
+      </script>
+HTML
+  print (OUTFILE $HTML);
+
+  # Random Page is always first
+$HTML = <<HTML;
+  <a id=\"RandomPageLink\" href=\"#">Random Page</a><br/>
+
+      <script>
+        const pageUrls = [
+HTML
+  print (OUTFILE $HTML);
+  
+  for my $dir (@FinalOutputDirs) {
+    $UnixValidDirName = $dir;
+    print (OUTFILE "'$BaseURL$UnixValidDirName/$UnixValidDirName.html',\n");
+  }
+  
+$HTML = <<HTML;
+        ];
+        function showRandomPage() {
+          // Get a random index from the array
+          const randomIndex = Math.floor(Math.random() * pageUrls.length);
+          location.href = pageUrls[randomIndex];
+        }
+      
+      </script>
+HTML
+  print (OUTFILE $HTML);
+  
+  
+  # tags is always listed second
   if (!$config->{SkipTags})
   {
     if ($DirDisplayName eq "Tags")
@@ -1553,24 +1598,31 @@ sub make_frontpage ()
   open (OUTFILE,$filename);
 
 $HTML = <<HTML;
-$DocTypeDeclaration
-$HTMLDeclaration
+<!DOCTYPE html>
+<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
   <head>
-    $XHTMLDeclaration
+    <html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
     <title>$config->{PageTitle}</title>
     <link href="TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="basic.css" rel="stylesheet" type="text/css">
     <link rel="alternate" type="application/rss+xml" title="$config->{RSSDescription}" href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}" />
     <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
+	<script type="text/javascript" src="usermanagement.js"></script>
+	<script type="text/javascript">
+		userbase.init({ appId: '$config->{UserBaseAppId}' })
+		.then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
+	</script>
+
+
   </head>
   <body>
     <div id="header" class="fullwidthcontainer">
-      <div class="toptitle"><a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;$config->{PageTitle}</div>
+      <div class="toptitle"><a href="$config->{HomePageURL}"> $config->{HomePageName}</a> $config->{PageTitle}</div>
       <div class="rightalign">
-		<input onclick="change();showhide()" type="button" value="Show Login" id="LoginButton"></input>
+		<input onclick="changeButton();showhide()" type="button" value="Show Login" id="LoginButton"></input>
 		<div id="LoggedInUser">&nbsp;</div>
 		&nbsp;&nbsp;
-        <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a><br/>
+        <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a>
       </div>
       <div class="spacer"/>
 
@@ -1593,6 +1645,10 @@ $HTMLDeclaration
 		<div id="signup-error"></div>
 	  </div>
 
+	  <script>
+		initListeners()
+	  </script>
+	  
       <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
       <div>
         <b class="spiffy">
@@ -1617,96 +1673,7 @@ $HTMLDeclaration
     </div>
     <div class="spacer"/>
 
-	<!-- application code -->
-	<script type="text/javascript">
-	userbase.init({ appId: '$config->{UserBaseAppId}' })
-		.then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
-		.catch(() => resetAuthFields())
-	
-	
-	function change() {
-	  var x = document.querySelectorAll("#button");
-	  var i;
-	  for (i = 0; i < x.length; i++) {
-		if (x[i].value == "Show Login") {
-		  x[i].value = "Hide Login";
-		} else {
-		  x[i].value = "Show Login";
-		}
-	  }
-	}
 
-	// Toggle show and hide divs
-
-	function showhide() {
-	  var x = document.querySelectorAll(".toggle-div");
-	  for (var i = 0; i < x.length; i++) {
-		x[i].classList.toggle('hidden');
-	  }
-	}
-	
-	function handleSignUp(e) {
-		e.preventDefault()
-
-		const username = document.getElementById('signup-username').value
-		const password = document.getElementById('signup-password').value
-		const email = document.getElementById('signup-email').value
-
-		userbase.signUp({ username, password, email, rememberMe: 'local' })
-		  .then((user) => showUserLoggedIn(user.username))
-		  .catch((e) => document.getElementById('signup-error').innerHTML = e)	  
-	}
-
-	function handleLogin(e) {
-		e.preventDefault()
-
-		const username = document.getElementById('login-username').value
-		const password = document.getElementById('login-password').value
-
-		userbase.signIn({ username, password, rememberMe: 'none' })
-			.then((user) => showUserLoggedIn(user.username))
-			.catch((e) => document.getElementById('login-error').innerHTML = e)
-	}
-
-	function showUserLoggedIn(username) {
-		change()
-		showhide()
-		document.getElementById('LoginButton').style.display = 'none'
-		document.getElementById('LoggedInUser').style.display = 'block';
-		document.getElementById('LoggedInUser').innerHTML = "logged in as <a href=\\"#\\">" + username + "</a>";
-	}
-
-	function handleLogout() {
-		userbase.signOut()
-		  .then(() => resetAuthFields())
-		  .catch((e) => document.getElementById('logout-error').innerText = e)
-	}
-	
-	function resetAuthFields() {
-		document.getElementById('login-username').value = ''
-		document.getElementById('login-password').value = ''
-		document.getElementById('login-error').innerText = ''
-		document.getElementById('signup-username').value = ''
-		document.getElementById('signup-password').value = ''
-		document.getElementById('signup-email').value = ''
-		document.getElementById('signup-error').innerText = ''
-		document.getElementById('LoggedInUser').innerText = ''
-		document.getElementById('LoginButton').style.display = 'block'
-		document.getElementById('LoggedInUser').style.display = 'none';
-	}
-
-	document.getElementById('signup-form').addEventListener('submit', handleSignUp)
-	document.getElementById('login-form').addEventListener('submit', handleLogin)
-	document.getElementById('LoggedInUser').style.display = 'none';
-	
-	var logoutLink = document.getElementById('LoggedInUser')
-	logoutLink.onclick = function() { 
-		handleLogout()
-		return false;
-	}
-
-	</script>
-    
 	<div id="wrapper">
 HTML
   print (OUTFILE $HTML);
@@ -1929,6 +1896,7 @@ XML
       &copyifnewer ("rss2html.xsl",$config->{AlbumDir});
       &copyifnewer ("basic.css",$config->{AlbumDir});
       &copyifnewer ("TwoColumn.css",$config->{AlbumDir});
+      &copyifnewer ("usermanagement.js",$config->{AlbumDir});
     }
   } # was able to open latestpics file
   else
@@ -2103,43 +2071,76 @@ sub make_tagspages ()
   open (OUTFILE,$filename);
 
 $HTML = <<HTML;
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
   <head>
     <title>$config->{PageTitle} - Tags</title>
     <link href="TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="basic.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
+	<script type="text/javascript" src="usermanagement.js"></script>
+	<script type="text/javascript">
+		userbase.init({ appId: '$config->{UserBaseAppId}' })
+		.then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
+	</script>
   </head>
   <body>
     <div id="header">
-      <div class="toptitle">
-         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
-         <a href="$config->{MainPageName}">$config->{PageTitle}</a>
-         Tags
-      </div>
-      <div class="spacer"/>
-      <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
-      <div>
-        <b class="spiffy">
-        <b class="spiffy1"><b></b></b>
-        <b class="spiffy2"><b></b></b>
-        <b class="spiffy3"></b>
-        <b class="spiffy4"></b>
-        <b class="spiffy5"></b></b>
+		<div class="toptitle">
+			<a href="$config->{HomePageURL}">$config->{HomePageName}</a> <a href="$config->{MainPageName}">$config->{PageTitle}</a> Tags
+		</div>
+		<div class="rightalign">
+			<input onclick="changeButton();showhide()" type="button" value="Show Login" id="LoginButton"></input>
+			<div id="LoggedInUser">&nbsp;</div>
+		</div>
+		
+		<div class="spacer"/>
 
-        <div class="spiffyfg">
-            <div class="instructionlineleft">Select a word below to see photos tagged with that keyword</div>
-            <div class="instructionlineright">There are $numtags keywords</div>
-        </div>
+		<div class="toggle-div hidden" id="authforms">
+			Login
+			<form id="login-form">
+				<input id="login-username" type="text" required placeholder="Username">
+				<input id="login-password" type="password" required placeholder="Password">
+				<input type="submit" value="Sign in">
+			</form>
+			<div id="login-error"></div>
 
-        <b class="spiffy">
-        <b class="spiffy5"></b>
-        <b class="spiffy4"></b>
-        <b class="spiffy3"></b>
-        <b class="spiffy2"><b></b></b>
-        <b class="spiffy1"><b></b></b></b>
-      </div>
-    </div>
+			Create an account
+			<form id="signup-form">
+				<input id="signup-username" type="text" required placeholder="Username">
+				<input id="signup-email" type="text" required placeholder="email">
+				<input id="signup-password" type="password" required placeholder="Password">
+				<input type="submit" value="Create an account">
+			</form>
+			<div id="signup-error"></div>
+		</div>
+
+		<script>
+			initListeners()
+		</script>
+		<div class="spacer"/>
+		<!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
+		<div>
+			<b class="spiffy">
+			<b class="spiffy1"><b></b></b>
+			<b class="spiffy2"><b></b></b>
+			<b class="spiffy3"></b>
+			<b class="spiffy4"></b>
+			<b class="spiffy5"></b></b>
+
+			<div class="spiffyfg">
+				<div class="instructionlineleft">Select a word below to see photos tagged with that keyword.</div>
+				<div class="instructionlineright">There are $numtags keywords</div>
+			</div>
+
+			<b class="spiffy">
+			<b class="spiffy5"></b>
+			<b class="spiffy4"></b>
+			<b class="spiffy3"></b>
+			<b class="spiffy2"><b></b></b>
+			<b class="spiffy1"><b></b></b></b>
+		</div>
+	</div>
     <div class="spacer"/>
     <div id="wrapper">
 HTML
@@ -2369,8 +2370,8 @@ sub makeTagPage()
   open (OUTFILE,$filename) or die "can't create $filename for tag page $!";
 
 $HTML = <<HTML;
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
   <head>
     <title>$config->{PageTitle} - Tags - $thisTag</title>
     <link href="../TwoColumn.css" rel="stylesheet" type="text/css">
@@ -2379,9 +2380,9 @@ $HTML = <<HTML;
   <body>
     <div id="header">
       <div class="toptitle">
-         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>&nbsp;
-         <a href="../$config->{MainPageName}">$config->{PageTitle}</a>&nbsp;
-         <a href="../tags.html">Tags</a>&nbsp;
+         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
+         <a href="../$config->{MainPageName}">$config->{PageTitle}</a>
+         <a href="../tags.html">Tags</a>
          $thisTag
       </div>
       <div class="spacer"/>
