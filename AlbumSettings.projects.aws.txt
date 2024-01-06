@@ -21,7 +21,15 @@
   # if this is 1, all HTML pages will be generated each time.
   # if this is 0, then HTML pages will only be generated if they are needed - speeds things up a tiny bit.
   CleanHTML => 0,
+  
+  # skip making the HTML for the pages and the slideshow
+  SkipHTML => 0,
+  
+  # This is for more rapid interation when just working on the front page
+  SkipMakeDirs => 0,
 
+  # for userbase login stuff - see QuickStart at https://userbase.com/docs/quickstart
+  UserBaseAppId => "b6a8348d-da63-495e-9600-e4f3368cc3f3",
   # set filename of main page:
   MainPageName => "index.html",
 
