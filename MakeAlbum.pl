@@ -1,4 +1,3 @@
-#! /usr/bin/perl -w
 # MakeAlbum.pl
 #
 # copyleft 1999-2017, Steve Donie <steve@donie.us>
@@ -9,6 +8,7 @@ use File::stat;
 use File::Basename;
 use File::Spec;
 use lib '.';
+
 
 # see that file for more details. Gets EXIF data for pictures.
 #require "getexif.pl";
@@ -110,16 +110,18 @@ open (XMLLOG,">".$XMLLogName);
 &calc_final_dirs ();
 &GetStopWords (); # have to do this here so stopwords aren't added during photo processing
 &make_dirs ();
+my $FinalOutputDirCount = @FinalOutputDirs;
+
 # another check of SkipDirs to make iteration on front page changes faster
 if (! $config->{SkipMakeDirs}) {
 	&log ("\nChecking size of $config->{AlbumDir}\n\n","progress");
 	$AlbumSize=&calc_size($config->{AlbumDir});
-	$SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
+	$SizeMessage = "$config->{PhotosPageLink} has $TotalPictures pictures in $FinalOutputDirCount pages. (".&report_size ($AlbumSize). ")";
 } else {
 	$AlbumSize=100000;  # made up number
 	$SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
 }	
-&make_frontpage ($SizeMessage);
+&make_frontpage ($SizeMessage); 
 &make_tagspages ();
 &log ("$SizeMessage\n","info");
 &report_time ($starttime);
@@ -455,7 +457,7 @@ sub make_dirs()
       my $goner = File::Spec->catdir($config->{AlbumDir},$dir);
       if (-e $goner) {
         my $globspec = File::Spec->catfile($goner,"*.*");
-        my @goners = glob($globspec);
+        my @goners = glob("'$globspec'");
         my $numGoners = @goners;
         &log ("  removing files in '$goner', which has $numGoners files\n","info");
 #        if ($numGoners <= 0) {
@@ -577,6 +579,9 @@ sub GetSameMonthPrevYear ()
 # large picture in the middle, plus thumbnails to the left and right - this allows
 # the user to easily 'flip' through the photos.
 #
+# If there is a file named summary.txt in the directory, the contents of this file will 
+# be added as a paragrpah at the top of that directory's page. 
+#
 #ComeBackHere
 sub MakePage ()
 {
@@ -632,6 +637,8 @@ sub MakePage ()
   my $dirname;
   my $LinkDisplayName;
   my $ColumnCount;
+  my $summaryFileName;
+  my $summaryInfo;
 
 
   $NewFullDir = $config->{AlbumDir}."/".$OutputDir;
@@ -697,6 +704,19 @@ sub MakePage ()
     }
 
     @filenames = (@filenames, @unsortedfiles);
+
+    # If there is a file named summary.txt in the directory, read that in and
+    # use the content as a header on the page that shows all the thumbnails.
+    $summaryFileName = $fullInputDir."/summary.txt";
+    if (-e $summaryFileName) {
+      &log(" Summary file $summaryFileName found\n", "info");
+      open my $fh, '<', $summaryFileName or die "Can't open file $!";
+
+      $summaryInfo = do { local $/; <$fh> };
+      
+      close (SUMMARYFILE);
+      &log(" Summary Info: $summaryInfo\n", "debug");
+    }
   }
 
   # need to sort filenames
@@ -704,7 +724,8 @@ sub MakePage ()
 
   # debugging output
   &log ("\nInput files for $DirDisplayName\n","debug");
-  for $picfilename (@filenames) {
+  for $picfilename (@filenames) 
+  {
       &log ("  $picfilename\n","debug");
   }
 
@@ -1274,21 +1295,33 @@ $HTML = <<HTML;
             $nextCell
           </div>
           <div class="spacer"/>
+          
 HTML
       print (OUTFILE $HTML);
 
+      # if there is something in the summary.txt file...
+      if ($summaryInfo ne "")
+      {
+$HTML = <<HTML;
+          <p class="summary">
+          $summaryInfo
+          </p>
+HTML
+        print (OUTFILE $HTML);
+      }
+      
       for ($index = 0; $index < @filenames; $index++)
       {
         # add HTML for this picture to the index page for this directory
     $HTML = <<HTML;
-    <div class="float">
-      <p class="centeredImage">
-        <a href="$NewFileNames[$index].htm">
-          <img src="$NewFileNames[$index]_sm.jpg" border="0" alt="$picCaptions[$index]" />
-        </a>
-      </p>
-      <p class="picCaption">$picCaptions[$index]</p>
-    </div>
+          <div class="float">
+            <p class="centeredImage">
+              <a href="$NewFileNames[$index].htm">
+                <img src="$NewFileNames[$index]_sm.jpg" border="0" alt="$picCaptions[$index]" />
+              </a>
+            </p>
+            <p class="picCaption">$picCaptions[$index]</p>
+          </div>
 HTML
           print (OUTFILE $HTML);
       }
@@ -1549,10 +1582,11 @@ HTML
     }
     else
     {
-      print (OUTFILE "<a href=\"".$BaseURL."tags.html\">Tags</a><br/>\n");
+      print (OUTFILE "<a href=\"".$BaseURL."tags.html\">Tags</a><br/><br/>\n");
     }
   }
 
+  # After those two, just regular pages. 
   for my $dir (@FinalOutputDirs) {
     $UnixValidDirName = $dir;
 
@@ -1729,10 +1763,17 @@ HTML
     if (!$config->{"SkipThumbnails"}) {
       copy "$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_sm.jpg", "$config->{AlbumDir}/LatestPhoto.jpg" or
         warn "can't copy '$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_sm.jpg' to '$config->{AlbumDir}/LatestPhoto.jpg'\n$!";
+
+      copy "$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_lg.jpg", "$config->{AlbumDir}/LatestPhoto_lg.jpg" or
+        warn "can't copy '$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_lg.jpg' to '$config->{AlbumDir}/LatestPhoto_lg.jpg'\n$!";
+
       if ($config->{WebRootDir})
       {
         copy "$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_sm.jpg", "$config->{WebRootDir}/LatestPhoto.jpg" or
           warn "can't copy '$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_sm.jpg' to '$config->{WebRootDir}/LatestPhoto.jpg'\n$!";
+
+        copy "$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_lg.jpg", "$config->{WebRootDir}/LatestPhoto_lg.jpg" or
+                  warn "can't copy '$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_lg.jpg' to '$config->{WebRootDir}/LatestPhoto_lg.jpg'\n$!";
       }
     }
 
@@ -2293,7 +2334,7 @@ sub OptimizeNumberOfTags ()
   my $numtags = keys %tagshash;
   my $tag;
   my $numValues;
-  my $maxTags = 400;
+  my $maxTags = 3000;
 
   # delete strange crap with 0 length tag
   for $tag (keys %tagshash)
@@ -2478,7 +2519,10 @@ HTML
 }
 
 #-----------------------------------------------------------------------------
-# change plural words to singular word
+# change plural words to singular word. Doesn't do anything yet. Would need to
+# do something like have an English dictionary and if the word ends in "s" and 
+# the word after removing the s is a legit English word, then return the word
+# without the "s" 
 sub makeSingular()
 {
   my $tag = $_[0];
