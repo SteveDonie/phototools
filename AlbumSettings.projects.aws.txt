@@ -105,5 +105,6 @@
   # Can also include regular expressions.
   # Set this to ".*" to include all directories.
   # examples: .*2002.* matches all directories with "2002" in them.
-  IncludeDirs => (".*20.*,ForSale,PhotoFrame"),
+  #IncludeDirs => (".*20.*,ForSale,PhotoFrame,Hubble.*"),
+  IncludeDirs => (".*"),
 }
