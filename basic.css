@@ -91,6 +91,12 @@ div.leftalign
     float:left;
 }
 
+/* for pages that have a summary.txt, this style is applied. */
+.summary
+{
+  font-size: 1.2em;
+}
+
 /* for showing/hiding the login and registration form */
 div.toggle-div {
   transition: 1s ease-out;
@@ -135,6 +141,13 @@ div.hidden {
 }
 
 /* spiffy rounded corners, from http://www.spiffycorners.com/ */
+/* 
+   Note that the actual ThemeColor in the config is ignored, and the color of the bars, etc. are
+   actually defined here. TODO - use the ThemeColor and calculate the different colors needed
+   for the rounded corner anti-aliasing depending on the base color, defined in the base .spiffy style
+   */
+   
+   
 .spiffy{display:block}
 .spiffy *{
   display:block;
