@@ -49,6 +49,9 @@
   #email => "someone\@example.com",
   email => "none",
 
+  # File name for web icon - should be a square image, maybe 64x64 or so, located at the root of the PhotosDir.
+  WebIcon => "Logo-icon.png",
+  
   # copyright notice
   copyrightString => "All images copyrighted&copy;, all rights reserved. Do not use without permission.",
 

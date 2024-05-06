@@ -17,7 +17,7 @@
   # if this is 1, all HTML pages will be generated each time.
   # if this is 0, then HTML pages will only be generated if they are needed - speeds things up a tiny bit.
   # If you change settings in this file then you may want to set to 1 one time.
-  CleanHTML => 1,
+  CleanHTML => 0,
   
   # skip making the HTML for the pages and the slideshow
   SkipHTML => 0,
@@ -45,8 +45,11 @@
   PhotosPageLink => "Past Work",
 
   # set email address:
-  email => "steve@icandothathandyman.com/",
-
+  email => "steve@icandothathandyman.com",
+  
+  # File name for web icon - should be a square image, maybe 64x64 or so, located at the root of the PhotosDir.
+  WebIcon => "Logo-icon.png",
+  
   # copyright notice
   copyrightString => "All images copyrighted &copy;, all rights reserved. Do not use without permission.",
 

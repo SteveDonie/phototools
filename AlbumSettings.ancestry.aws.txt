@@ -44,6 +44,9 @@
   # set text of link to Photos Home:
   PhotosPageLink => "Donie Ancestry Photos",
 
+  # File name for web icon - should be a square image, maybe 64x64 or so, located at the root of the PhotosDir.
+  WebIcon => "Logo-icon.png",
+  
   # set email address:
   email => "none",
 
