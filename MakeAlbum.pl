@@ -241,7 +241,8 @@ sub log_config
                         "AlbumPageURL",
                         "SkipDirs",
                         "IncludeDirs",
-                        "copyrightString");
+                        "copyrightString",
+                        "WebIcon");
   my $broken = 0;
   foreach my $opt (@requiredConfig) {
     if (!$config->{$opt}) {
@@ -1046,6 +1047,8 @@ my $HTML = <<HTML;
     <title>$DirDisplayName</title>
     <link href="../TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="../basic.css" rel="stylesheet" type="text/css">
+    <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
+    <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
   </head>
 HTML
   print (PICHTML $HTML);
@@ -1229,7 +1232,9 @@ my $HTML = <<HTML;
     <title>$config->{PageTitle} - $DirDisplayName</title>
     <link href="../TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="../basic.css" rel="stylesheet" type="text/css">
-  </head>
+    <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
+    <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
+ </head>
 HTML
       print (OUTFILE $HTML);
 
@@ -1578,7 +1583,7 @@ HTML
   {
     if ($DirDisplayName eq "Tags")
     {
-      print (OUTFILE "<strong>Tags</strong><br/>\n");
+      print (OUTFILE "<strong>Tags</strong><br/><br/>\n");
     }
     else
     {
@@ -1639,6 +1644,8 @@ $HTML = <<HTML;
     <title>$config->{PageTitle}</title>
     <link href="TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="basic.css" rel="stylesheet" type="text/css">
+    <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
+    <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
     <link rel="alternate" type="application/rss+xml" title="$config->{RSSDescription}" href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}" />
     <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
 	<script type="text/javascript" src="usermanagement.js"></script>
@@ -1776,6 +1783,11 @@ HTML
                   warn "can't copy '$config->{AlbumDir}/$DirNames[0]/$FileNames[0]_lg.jpg' to '$config->{WebRootDir}/LatestPhoto_lg.jpg'\n$!";
       }
     }
+    
+    # Copy the configured WebIcon to the correct location
+    copy "$config->{PhotosDir}/$config->{WebIcon}", "$config->{AlbumDir}/$config->{WebIcon}" or
+      warn "can't copy '$config->{PhotosDir}/$config->{WebIcon}' to '$config->{AlbumDir}/$config->{WebIcon}'\n$!";
+
 
     # now create the table of photos. Put the time it was updated here.
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -2118,6 +2130,8 @@ $HTML = <<HTML;
     <title>$config->{PageTitle} - Tags</title>
     <link href="TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="basic.css" rel="stylesheet" type="text/css">
+    <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
+    <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
     <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
 	<script type="text/javascript" src="usermanagement.js"></script>
 	<script type="text/javascript">
@@ -2417,6 +2431,8 @@ $HTML = <<HTML;
     <title>$config->{PageTitle} - Tags - $thisTag</title>
     <link href="../TwoColumn.css" rel="stylesheet" type="text/css">
     <link href="../basic.css" rel="stylesheet" type="text/css">
+    <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
+    <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
   </head>
   <body>
     <div id="header">
