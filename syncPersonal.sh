@@ -2,6 +2,9 @@
 echo Syncing personal content from ~/albums to S3
 aws s3 cp ~/albums/index.html s3://album.donie.us/
 
+echo Syncing album 'drillinginfo'
+aws s3 sync ~/albums/drillinginfo/ s3://album.donie.us/drillinginfo --delete
+
 echo Syncing album 'projects'
 aws s3 sync ~/albums/projects/ s3://album.donie.us/projects --delete
 
