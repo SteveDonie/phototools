@@ -3,7 +3,7 @@
   PhotosDir => "C:\\Users\\Steve\\Google Drive\\Handyman\\photos",
 
   # set directory where web album is generated:
-  AlbumDir => "C:\\Users\\Steve\\Google Drive\\Handyman\\website\\httrack\\webnode-site\\i-can-do-that-handyman.webnode.page\\past-work\\photos",
+  AlbumDir => "C:\\Users\\Steve\\Google Drive\\Handyman\\website\\past-work\\photos",
 
   # set largest dimension of large photos, in pixels:
   LargeSize => 800,
