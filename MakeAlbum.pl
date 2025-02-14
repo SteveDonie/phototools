@@ -8,7 +8,8 @@ use File::stat;
 use File::Basename;
 use File::Spec;
 use lib '.';
-
+use v5.10;                     # minimal Perl version for \R support
+use utf8; 
 
 # see that file for more details. Gets EXIF data for pictures.
 #require "getexif.pl";
@@ -31,9 +32,9 @@ use lib '.';
 # This goes through the directory specified in the setting PhotosDir
 # and creates a matching directory structure at AlbumDir. It then uses a small
 # Java program to create 2 jpg files from each jpg that exists in the orignal
-# location - one at a "large" size, and one as a thumbnail. It also needs to
-# create a web page for each directory, and a webpage that points to each
-# subdirectory webpage.
+# location - one at a "large" size, and one as a thumbnail. It also creates a 
+# web page for each directory that includes navigation on the left side to all
+# of the other directories/pages.
 #
 ###############################################################################
 ## Globals
@@ -366,8 +367,10 @@ sub calc_final_dirs ()
 
   @FinalInputDirs = sort {$b cmp $a} (@FinalInputDirs);
 
-  # now create the OutDirsHash, which is what we will really use - handle ZoomBrowser type directories and consolidate
-  # those into months. Otherwise it gets even more ridiculous than by months!
+  # Now create the OutDirsHash, which is what we will really use - handle ZoomBrowser 
+  # type directories (ZoomBrowser was a Canon application that put photos into directories
+  # named by YYYY-MM-DD) and consolidate those into months. Otherwise it gets even more 
+  # ridiculous than by months!
   # Also keep track of the DisplayName for each OutputDir
   my $loglevel="debug";
   my @list = ();
@@ -581,7 +584,7 @@ sub GetSameMonthPrevYear ()
 # the user to easily 'flip' through the photos.
 #
 # If there is a file named summary.txt in the directory, the contents of this file will 
-# be added as a paragrpah at the top of that directory's page. 
+# be added as a paragraph at the top of that directory's page. 
 #
 #ComeBackHere
 sub MakePage ()
@@ -712,12 +715,22 @@ sub MakePage ()
     if (-e $summaryFileName) {
       &log(" Summary file $summaryFileName found\n", "info");
       open my $fh, '<', $summaryFileName or die "Can't open file $!";
-
       $summaryInfo = do { local $/; <$fh> };
-      
       close (SUMMARYFILE);
+      # Format it nicely.
+      $summaryInfo =~ s/\n/<br\/>/g;
+
       &log(" Summary Info: $summaryInfo\n", "debug");
-    }
+
+      # Add the words in the summary file to the tags hash to be processed later.
+      
+      # TODO - this won't work right now - see comment at makeTagPage. The problem is that
+      # the bit after the pipe is always treated a certain way, assuming it is the name
+      # of a photo and a photo 'page', so just putting index.html doesn't work. There is 
+      # also an assumption in that function that it can DISPLAY the photo referred to, and
+      # an index page doesn't have that. 
+      #&AddTags($summaryInfo,"$inputDir|index.html");
+     }
   }
 
   # need to sort filenames
@@ -1126,10 +1139,18 @@ HTML
            print (PICHTML "</a>\n");
         }
 
+my $tagLine = "";
+if (length(trim($picAltNames[$index])) > 0) {
+  $tagLine = "<b>tagged with: </b>$picAltNames[$index]";
+}
 
+my $dateTimeLine = "";
+# TODO - add photo date/time here. Could be from filename or exif
 $HTML = <<HTML;
     $picCaptions[$index]<BR/>
     <font size="2">$picComments[$index]</font><BR/>
+    <font size="1">$tagLine</font><BR/>
+    <font size="1">$dateTimeLine</font><BR/>
     </CENTER>
   </TD>
 
@@ -2512,6 +2533,8 @@ HTML
 
     &log ("   [$picpath] [$picfilename] [$UnixValidDirName] [$NewFullDir] [$picname] [$NewFileName]\n",$loglevel);
 
+    # If we want the have a tag refer to a whole directory because the summary has a tag word, then this would
+    # need to change because it uses GetPictureInfo and that won't work on "index.html" right now. 
     $HTML = <<HTML;
     <div class="float">
       <p class="centeredImage">
@@ -2539,6 +2562,9 @@ HTML
 # do something like have an English dictionary and if the word ends in "s" and 
 # the word after removing the s is a legit English word, then return the word
 # without the "s" 
+# An alternate idea is to look at all the words it knows about, and if there is
+# a word that ends in "s" AND the same word without the "s", then it is probably
+# a plural version.
 sub makeSingular()
 {
   my $tag = $_[0];
@@ -2934,11 +2960,17 @@ sub ReadCaptionFile()
   my $CaptionFileName=$_[0];
   # parse this
   # <!-- THUMBSPART:name -->
-  # Girls like music
+  # Jordan Jada
   # <!-- THUMBSPART:caption -->
   # Jordan and Jada listening to CDs
   # <!-- THUMBSPART:comment -->
   # testing out thumbs shell extension
+  #
+  # The "caption" is shown under each photo. The "comment" is shown when showing
+  # the large size photo. Each word in the "name" part is added as a tag so that
+  # the tags page can show people/places/things/etc. It would be cool to have
+  # an AI go through ALL the photos and add tags for people I train it to recognize.
+  
   open (CAPTIONFILE,"<$CaptionFileName") or die;
 
   my $state="none";
@@ -2990,7 +3022,7 @@ sub ReadCaptionFile()
         &log (" added to comments\n","debug");
       }
       else {
-        &log (" ERROR! Nothing done with caption line '$_'\n","info");
+        &log (" ERROR! Nothing done with caption line '$_' in '$CaptionFileName'\n","info");
       }
     }
   }
@@ -2999,6 +3031,19 @@ sub ReadCaptionFile()
   chomp $picAltName;
   chomp $picCaption;
   chomp $picComment;
+
+  # break the tags up into words (split on space) and then
+  # remove any duplicates.
+  my $tagWord;
+  my @tagWords = split / /, $picAltName;
+  my %seen = ();
+  my @uniqueTagWords;
+  foreach $tagWord (@tagWords) 
+  {
+    $tagWord =~ s/\R//g;
+    push(@uniqueTagWords, $tagWord) unless $seen{$tagWord}++;
+  }
+  $picAltName = join(" ", @uniqueTagWords);
 
   my @PictureInfo = ($picAltName,$picCaption,$picComment);
   return @PictureInfo;
@@ -3043,7 +3088,7 @@ sub GetPictureInfo ()
     &AddTags($picAltName,"$picpath|$picname.$picext");
     &AddTags($picCaption,"$picpath|$picname.$picext");
 
-    $picAltName =~ s/\n/<br\/>/g;
+    $picAltName =~ s/\n/ /g;
     $picCaption =~ s/\n/<br\/>/g;
     $picComment =~ s/\n/<br\/>/g;
   } # end if there was a caption file
