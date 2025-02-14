@@ -1,9 +1,9 @@
 {
   # set directory to find photos:
-  PhotosDir => "C:\\Users\\Steve\\Resilio Sync\\incomingPhotos",
+  PhotosDir => "C:\\Users\\Steve\\Resilio Sync\\personalPhotos",
 
   # set directory where web album is generated:
-  AlbumDir => "C:\\Users\\Steve\\albums\\incoming",
+  AlbumDir => "C:\\Users\\Steve\\albums\\personal",
 
   # set largest dimension of large photos, in pixels:
   LargeSize => 800,
@@ -39,10 +39,10 @@
   MainPageName => "index.html",
 
   # set title of main page, shown in titlebar of browser:
-  PageTitle => "Donie Family Photos",
+  PageTitle => "Steve's Photos",
 
   # set text of link to Photos Home:
-  PhotosPageLink => "Donie Family Photos",
+  PhotosPageLink => "Steve's Photos",
 
   # set email address:
   email => "none",
@@ -65,7 +65,7 @@
   #                 album directory.
   # or "" to have no link
   BigPicLink => "httpfullsize",
-  #FullSizeBaseURL => "http://album.donie.us/IncomingFullSize/",
+  #FullSizeBaseURL => "http://album.donie.us/PersonalFullSize/",
 
   # set filename for RSS feed:
   RSSFeedName => "newphotos.xml",
@@ -102,12 +102,12 @@
 
   # url of Album page - a relative URL to the HomePage
   # it should have a trailing slash on it
-  AlbumPageURL => "incoming/",
+  AlbumPageURL => "personal/",
 
 
   # directories to skip when making albums, can also include regular expressions
   # directories to skip when making albums, can also include regular expressions
-  SkipDirs => (".*\\\.svn\\.*,logs,Examples,Extras,Projects,Employee Action Committee,WWSDC 2001,WWSDC 2000,Landmark.*,Reno.*,Julie.*,Baby.*,.*Old Photos Of Kaili.*,.*Moles.*,.*Show Posters.*,.*Keith.*,iPod.*,originals,CellPhone,.*Rental Property Search,.*Katie.*"),
+  SkipDirs => (".*\\\.svn\\.*,logs,Examples,Extras,Projects,Employee Action Committee,WWSDC 2001,WWSDC 2000,Landmark.*,Reno.*,Julie.*,Baby.*,.*Old Photos Of Kaili.*,.*Moles.*,.*Show Posters.*,.*Keith.*,iPod.*,originals,CellPhone,.*Rental Property Search"),
 
   # Comma separated list of directories/patterns to include when making albums.
   # Can also include regular expressions.
