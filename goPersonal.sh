@@ -6,8 +6,10 @@ echo -e "\nStarted at $current_date_time" > timing.txt
 
 cp ~/personal/donie.us/album-index.html ~/albums/index.html
 
-echo -e "\nTime to make Family" >> timing.txt
-{ time perl MakeAlbum.pl Family.aws; } 2>> timing.txt
+echo skipping family for now. Replacing all html files with \"Album Offline\"
+cp ~/personal/donie.us/offline/index.html ~/albums/family/
+# echo -e "\nTime to make Family" >> timing.txt
+# { time perl MakeAlbum.pl Family.aws; } 2>> timing.txt
 
 echo -e "\nTime to make Personal" >> timing.txt
 { time perl MakeAlbum.pl Personal.aws; } 2>> timing.txt

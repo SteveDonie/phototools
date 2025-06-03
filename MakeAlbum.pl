@@ -1668,75 +1668,90 @@ $HTML = <<HTML;
     <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
     <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
     <link rel="alternate" type="application/rss+xml" title="$config->{RSSDescription}" href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}" />
+    
+HTML
+  print (OUTFILE $HTML);
+  
+  if ($config->{UserBaseAppId}) {
+  
+    $HTML = <<HTML;
+    
     <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
-	<script type="text/javascript" src="usermanagement.js"></script>
-	<script type="text/javascript">
-		userbase.init({ appId: '$config->{UserBaseAppId}' })
-		.then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
-	</script>
+    <script type="text/javascript" src="usermanagement.js"></script>
+HTML
+    print (OUTFILE $HTML);
+  }
 
+  $HTML = <<HTML;
 
-  </head>
+</head>
   <body>
     <div id="header" class="fullwidthcontainer">
       <div class="toptitle"><a href="$config->{HomePageURL}"> $config->{HomePageName}</a> $config->{PageTitle}</div>
       <div class="rightalign">
-		<input onclick="changeButton();showhide()" type="button" value="Show Login" id="LoginButton"></input>
-		<div id="LoggedInUser">&nbsp;</div>
-		&nbsp;&nbsp;
+        <div id="LoggedInUser">&nbsp;</div>
+        &nbsp;&nbsp;
         <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a>
       </div>
       <div class="spacer"/>
+HTML
+  print (OUTFILE $HTML);
 
-	  <div class="toggle-div hidden" id="authforms">
-		Login
-		<form id="login-form">
-			<input id="login-username" type="text" required placeholder="Username">
-			<input id="login-password" type="password" required placeholder="Password">
-			<input type="submit" value="Sign in">
-		</form>
-		<div id="login-error"></div>
+  if ($config->{UserBaseAppId}) {
 
-		Create an account
-		<form id="signup-form">
-			<input id="signup-username" type="text" required placeholder="Username">
-			<input id="signup-email" type="text" required placeholder="email">
-			<input id="signup-password" type="password" required placeholder="Password">
-			<input type="submit" value="Create an account">
-		</form>
-		<div id="signup-error"></div>
-	  </div>
+    $HTML = <<HTML;
 
-	  <script>
-		initListeners()
-	  </script>
-	  
-      <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
-      <div>
-        <b class="spiffy">
-        <b class="spiffy1"><b></b></b>
-        <b class="spiffy2"><b></b></b>
-        <b class="spiffy3"></b>
-        <b class="spiffy4"></b>
-        <b class="spiffy5"></b></b>
+      <div id="auth-view">
+        <h1>Login</h1>
+        <form id="login-form">
+          <input id="login-username" type="text" required placeholder="Username">
+          <input id="login-password" type="password" required placeholder="Password">
+          <input type="submit" value="Sign in">
+        </form>
+        <div id="login-error"></div>
 
-        <div class="spiffyfg">
-            <div class="instructionlineleft">Select a link below to see thumbnails, or click the photos for a larger version</div>
-            <div class="instructionlineright">$AlbumSize&nbsp;</div>
-        </div>
-
-        <b class="spiffy">
-        <b class="spiffy5"></b>
-        <b class="spiffy4"></b>
-        <b class="spiffy3"></b>
-        <b class="spiffy2"><b></b></b>
-        <b class="spiffy1"><b></b></b></b>
+        <h1>Create an account</h1>
+        <form id="signup-form">
+          <input id="signup-username" type="text" required placeholder="Username">
+          <input id="signup-password" type="password" required placeholder="Password">
+          <input type="submit" value="Create an account">
+        </form>
+        <div id="signup-error"></div>
       </div>
+      <script>
+        initListeners()
+      </script>
     </div>
-    <div class="spacer"/>
+    
+HTML
+    print (OUTFILE $HTML);
+  }
+  
+$HTML = <<HTML;
+    
+    <div class="spacer" id="album-content"/>
+      <div id="wrapper">
+        <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
+        <div>
+          <b class="spiffy">
+          <b class="spiffy1"><b></b></b>
+          <b class="spiffy2"><b></b></b>
+          <b class="spiffy3"></b>
+          <b class="spiffy4"></b>
+          <b class="spiffy5"></b></b>
 
+          <div class="spiffyfg">
+              <div class="instructionlineleft">Select a link below to see thumbnails, or click the photos for a larger version</div>
+              <div class="instructionlineright">$AlbumSize&nbsp;</div>
+          </div>
 
-	<div id="wrapper">
+          <b class="spiffy">
+          <b class="spiffy5"></b>
+          <b class="spiffy4"></b>
+          <b class="spiffy3"></b>
+          <b class="spiffy2"><b></b></b>
+          <b class="spiffy1"><b></b></b></b>
+        </div>
 HTML
   print (OUTFILE $HTML);
 
@@ -1878,10 +1893,35 @@ HTML
     }
     my $footer = &PageFooter();
 
+    # Add the footer
+
     $HTML = <<HTML;
-    </div>
+      </div>
     </div><!-- close div#wrapper -->
     $footer
+HTML
+    print (OUTFILE $HTML);
+    
+
+    # Iff userbaseappid is set, show login fields only and don't show content.
+    if ($config->{UserBaseAppId}) {
+    
+      my $SCRIPT = <<SCRIPT;
+      <!-- application code -->
+      <script type="text/javascript">
+        userbase.init({ appId: '$config->{UserBaseAppId}' })
+        .then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
+        
+        document.getElementById('album-content').style.display = 'none';
+      </script>
+SCRIPT
+      
+      print (OUTFILE $SCRIPT);
+    }
+
+    # Always close the body tag and the html tag.
+    $HTML = <<HTML;
+     
   </body>
 </html>
 HTML
@@ -1928,9 +1968,9 @@ HTML
     <lastBuildDate>$humanTime</lastBuildDate>
     <self_url>$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}</self_url>
     <image>
-	<title>$config->{RSSFeedTitle}</title>
-	<url>$config->{HomePageURL}$config->{RSSImageURL}</url>
-	<link>$config->{HomePageURL}$config->{AlbumPageURL}$config->{MainPageName}</link>
+      <title>$config->{RSSFeedTitle}</title>
+      <url>$config->{HomePageURL}$config->{RSSImageURL}</url>
+      <link>$config->{HomePageURL}$config->{AlbumPageURL}$config->{MainPageName}</link>
     </image>
 
 XML
@@ -2154,69 +2194,67 @@ $HTML = <<HTML;
     <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
     <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
     <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
-	<script type="text/javascript" src="usermanagement.js"></script>
-	<script type="text/javascript">
-		userbase.init({ appId: '$config->{UserBaseAppId}' })
-		.then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
-	</script>
+    <script type="text/javascript" src="usermanagement.js"></script>
   </head>
   <body>
     <div id="header">
-		<div class="toptitle">
-			<a href="$config->{HomePageURL}">$config->{HomePageName}</a> <a href="$config->{MainPageName}">$config->{PageTitle}</a> Tags
-		</div>
-		<div class="rightalign">
-			<input onclick="changeButton();showhide()" type="button" value="Show Login" id="LoginButton"></input>
-			<div id="LoggedInUser">&nbsp;</div>
-		</div>
-		
-		<div class="spacer"/>
+    <div class="toptitle">
+      <a href="$config->{HomePageURL}">$config->{HomePageName}</a> <a href="$config->{MainPageName}">$config->{PageTitle}</a> Tags
+    </div>
+    <div class="rightalign">
+      <input onclick="changeButton();showhide()" type="button" value="Show Login" id="LoginButton"></input>
+      <div id="LoggedInUser">&nbsp;</div>
+    </div>
+    
+    <div class="spacer"/>
 
-		<div class="toggle-div hidden" id="authforms">
-			Login
-			<form id="login-form">
-				<input id="login-username" type="text" required placeholder="Username">
-				<input id="login-password" type="password" required placeholder="Password">
-				<input type="submit" value="Sign in">
-			</form>
-			<div id="login-error"></div>
+      <div class="toggle-div hidden" id="authforms">
+        Login
+        <form id="login-form">
+          <input id="login-username" type="text" required placeholder="Username">
+          <input id="login-password" type="password" required placeholder="Password">
+          <input type="submit" value="Sign in">
+        </form>
+        <div id="login-error"></div>
 
-			Create an account
-			<form id="signup-form">
-				<input id="signup-username" type="text" required placeholder="Username">
-				<input id="signup-email" type="text" required placeholder="email">
-				<input id="signup-password" type="password" required placeholder="Password">
-				<input type="submit" value="Create an account">
-			</form>
-			<div id="signup-error"></div>
-		</div>
+        Create an account
+        <form id="signup-form">
+          <input id="signup-username" type="text" required placeholder="Username">
+          <input id="signup-email" type="text" required placeholder="email">
+          <input id="signup-password" type="password" required placeholder="Password">
+          <input type="submit" value="Create an account">
+        </form>
+        <div id="signup-error"></div>
+      </div>
 
-		<script>
-			initListeners()
-		</script>
-		<div class="spacer"/>
-		<!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
-		<div>
-			<b class="spiffy">
-			<b class="spiffy1"><b></b></b>
-			<b class="spiffy2"><b></b></b>
-			<b class="spiffy3"></b>
-			<b class="spiffy4"></b>
-			<b class="spiffy5"></b></b>
+      <script>
+        initListeners()
+      </script>
+      
+      
+      <div class="spacer"/>
+      <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
+      <div>
+        <b class="spiffy">
+        <b class="spiffy1"><b></b></b>
+        <b class="spiffy2"><b></b></b>
+        <b class="spiffy3"></b>
+        <b class="spiffy4"></b>
+        <b class="spiffy5"></b></b>
 
-			<div class="spiffyfg">
-				<div class="instructionlineleft">Select a word below to see photos tagged with that keyword.</div>
-				<div class="instructionlineright">There are $numtags keywords</div>
-			</div>
+        <div class="spiffyfg">
+          <div class="instructionlineleft">Select a word below to see photos tagged with that keyword.</div>
+          <div class="instructionlineright">There are $numtags keywords</div>
+        </div>
 
-			<b class="spiffy">
-			<b class="spiffy5"></b>
-			<b class="spiffy4"></b>
-			<b class="spiffy3"></b>
-			<b class="spiffy2"><b></b></b>
-			<b class="spiffy1"><b></b></b></b>
-		</div>
-	</div>
+        <b class="spiffy">
+        <b class="spiffy5"></b>
+        <b class="spiffy4"></b>
+        <b class="spiffy3"></b>
+        <b class="spiffy2"><b></b></b>
+        <b class="spiffy1"><b></b></b></b>
+      </div>
+    </div>
     <div class="spacer"/>
     <div id="wrapper">
 HTML

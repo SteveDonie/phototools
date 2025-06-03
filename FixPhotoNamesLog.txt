@@ -1,0 +1,5 @@
+FixPhotoNames.bat 
+Mon 05/12/2025 
+21:24:47.96 
+fixing "c:\Users\steve\personal\tempPhotoProcessing" 
+can't open 'c:\Users\steve\personal\tempPhotoProcessing'
