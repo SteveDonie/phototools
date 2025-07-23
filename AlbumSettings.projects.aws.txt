@@ -29,7 +29,7 @@
   SkipMakeDirs => 0,
 
   # for userbase login stuff - see QuickStart at https://userbase.com/docs/quickstart
-  UserBaseAppId => "b6a8348d-da63-495e-9600-e4f3368cc3f3",
+  #UserBaseAppId => "b6a8348d-da63-495e-9600-e4f3368cc3f3",
   # set filename of main page:
   MainPageName => "index.html",
 
@@ -94,7 +94,7 @@
   # You typically set this to the URL of your home page,
   # for example "http://my.site.com/"
   # It should have the trailing slash on it.
-  HomePageURL => "http://album.donie.us/",
+  HomePageURL => "https://album.donie.us/",
 
   # url of Album page - a relative URL to the HomePage
   # it should have a trailing slash on it
