@@ -8,6 +8,7 @@ use File::stat;
 use File::Basename;
 use File::Spec;
 use lib '.';
+use Text::Markdown 'markdown';
 use v5.10;                     # minimal Perl version for \R support
 use utf8; 
 
@@ -27,7 +28,6 @@ use utf8;
 # add skinning
 # searchability would be cool...embed Lucene?
 # slideshow of ALL photos
-# generate an RSS1/RSS2/Atom feed - done for RSS 2
 #
 # This goes through the directory specified in the setting PhotosDir
 # and creates a matching directory structure at AlbumDir. It then uses a small
@@ -642,7 +642,8 @@ sub MakePage ()
   my $LinkDisplayName;
   my $ColumnCount;
   my $summaryFileName;
-  my $summaryInfo;
+  my $summaryInfoRaw;
+  my $summaryInfoHtml;
 
 
   $NewFullDir = $config->{AlbumDir}."/".$OutputDir;
@@ -710,17 +711,19 @@ sub MakePage ()
     @filenames = (@filenames, @unsortedfiles);
 
     # If there is a file named summary.txt in the directory, read that in and
-    # use the content as a header on the page that shows all the thumbnails.
+    # use the content as a header on the page that shows all the thumbnails. The
+    # summary.txt file can use Markdown syntax for some basic formatting.
     $summaryFileName = $fullInputDir."/summary.txt";
     if (-e $summaryFileName) {
       &log(" Summary file $summaryFileName found\n", "info");
       open my $fh, '<', $summaryFileName or die "Can't open file $!";
-      $summaryInfo = do { local $/; <$fh> };
+      $summaryInfoRaw = do { local $/; <$fh> };
       close (SUMMARYFILE);
-      # Format it nicely.
-      $summaryInfo =~ s/\n/<br\/>/g;
+      # Format it nicely. Uses Markdown.
+      $summaryInfoHtml = markdown($summaryInfoRaw);
 
-      &log(" Summary Info: $summaryInfo\n", "debug");
+      &log(" Summary Info Raw: $summaryInfoRaw\n", "debug");
+      &log(" Summary Info HTML: $summaryInfoHtml\n", "debug");
 
       # Add the words in the summary file to the tags hash to be processed later.
       
@@ -729,7 +732,7 @@ sub MakePage ()
       # of a photo and a photo 'page', so just putting index.html doesn't work. There is 
       # also an assumption in that function that it can DISPLAY the photo referred to, and
       # an index page doesn't have that. 
-      #&AddTags($summaryInfo,"$inputDir|index.html");
+      #&AddTags($summaryInfoRaw,"$inputDir|index.html");
      }
   }
 
@@ -1326,11 +1329,11 @@ HTML
       print (OUTFILE $HTML);
 
       # if there is something in the summary.txt file...
-      if ($summaryInfo ne "")
+      if ($summaryInfoHtml ne "")
       {
 $HTML = <<HTML;
           <p class="summary">
-          $summaryInfo
+          $summaryInfoHtml
           </p>
 HTML
         print (OUTFILE $HTML);
@@ -1689,6 +1692,7 @@ HTML
     <div id="header" class="fullwidthcontainer">
       <div class="toptitle"><a href="$config->{HomePageURL}"> $config->{HomePageName}</a> $config->{PageTitle}</div>
       <div class="rightalign">
+        <div id="logout-error"></div>
         <div id="LoggedInUser">&nbsp;</div>
         &nbsp;&nbsp;
         <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a>
@@ -1706,18 +1710,20 @@ HTML
         <form id="login-form">
           <input id="login-username" type="text" required placeholder="Username">
           <input id="login-password" type="password" required placeholder="Password">
-          <input type="submit" value="Sign in">
+          <input id="LoginButton" type="submit" value="Sign in">
         </form>
         <div id="login-error"></div>
 
         <h1>Create an account</h1>
         <form id="signup-form">
           <input id="signup-username" type="text" required placeholder="Username">
+          <input id="signup-email" type="text" required placeholder="email"></input>
           <input id="signup-password" type="password" required placeholder="Password">
           <input type="submit" value="Create an account">
         </form>
         <div id="signup-error"></div>
       </div>
+
       <script>
         initListeners()
       </script>
@@ -2209,22 +2215,6 @@ $HTML = <<HTML;
     <div class="spacer"/>
 
       <div class="toggle-div hidden" id="authforms">
-        Login
-        <form id="login-form">
-          <input id="login-username" type="text" required placeholder="Username">
-          <input id="login-password" type="password" required placeholder="Password">
-          <input type="submit" value="Sign in">
-        </form>
-        <div id="login-error"></div>
-
-        Create an account
-        <form id="signup-form">
-          <input id="signup-username" type="text" required placeholder="Username">
-          <input id="signup-email" type="text" required placeholder="email">
-          <input id="signup-password" type="password" required placeholder="Password">
-          <input type="submit" value="Create an account">
-        </form>
-        <div id="signup-error"></div>
       </div>
 
       <script>
