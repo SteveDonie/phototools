@@ -602,25 +602,65 @@ sub generate_album_page_auth_body {
       </div>
 
       <script>
+        console.log('auth_body script running')
         userbase.init({ appId: '$config->{UserBaseAppId}' })
         .then((session) => {
+          var authView = document.getElementById('auth-view')
+          var albumContent = document.getElementById('album-content')
           if (session.user) {
-            // User is logged in, show content
-            document.getElementById('auth-view').style.display = 'none';
-            document.body.style.display = 'block';
+            console.log('User is logged in, show content')
+
+            if (authView) { 
+              console.log('hiding auth-view')
+              authView.style.display = 'none'; 
+             } else {
+               console.log('can not hide auth view, not defined')
+             }
+            
+            if (albumContent) { 
+              console.log('showing album-content')
+              albumContent.style.display = 'block'; 
+            } else {
+              console.log('can not show album-content, not defined')
+            }
+
             showUserLoggedIn(session.user.username);
-            initListeners();
+            initListeners(session);
           } else {
-            // User not logged in, show login form
-            document.getElementById('auth-view').style.display = 'block';
-            document.body.style.display = 'none';
-            initListeners();
+            console.log('User not logged in, show login form')
+            
+            if (authView) { 
+              console.log('showing auth-view')
+              authView.style.display = 'block'; 
+             } else {
+               console.log('can not show auth view, not defined')
+             }
+            
+            if (albumContent) { 
+              console.log('hiding album-content')
+              albumContent.style.display = 'none'; 
+            } else {
+              console.log('can not hide album-content, not defined')
+            }
+            
+            initListeners(session);
           }
         })
         .catch(() => {
-          // Error or not logged in
-          document.getElementById('auth-view').style.display = 'block';
-          document.body.style.display = 'none';
+          console.log('Error or not logged in')
+          if (authView) { 
+            console.log('showing auth-view')
+            authView.style.display = 'block'; 
+           } else {
+             console.log('can not show auth view, not defined')
+           }
+          
+          if (albumContent) { 
+            console.log('hiding album-content')
+            albumContent.style.display = 'none'; 
+          } else {
+            console.log('can not hide album-content, not defined')
+          }
         });
       </script>
 AUTH_BODY
@@ -1819,7 +1859,7 @@ HTML
 
   $HTML = <<HTML;
     
-    <div class="spacer" id="album-content"/>
+    <div class="spacer"/>
       <div id="wrapper">
         <!-- spiffy rounded corners, from http://www.spiffycorners.com/ -->
         <div>
