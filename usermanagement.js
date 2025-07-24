@@ -10,26 +10,6 @@ function changeButton() {
   }
 }
 
-// Toggle show and hide divs
-
-function showhide() {
-  var x = document.querySelectorAll(".toggle-div");
-  for (var i = 0; i < x.length; i++) {
-    if (x[i].classList.contains('hidden')) {
-      x[i].classList.remove('hidden');
-    } else {
-      x[i].classList.add('hidden');
-    }
-  }
-}
-
-function hideLoginFields() {
-  var x = document.querySelectorAll(".toggle-div");
-  for (var i = 0; i < x.length; i++) {
-    x[i].classList.add('hidden');
-  }
-}
-
 function handleSignUp(e) {
   e.preventDefault()
 
@@ -54,11 +34,11 @@ function handleLogin(e) {
 }
 
 function showUserLoggedIn(username) {
-  hideLoginFields();
-  document.getElementById('LoginButton').style.display = 'none'
+  document.getElementById('auth-view').style.display = 'none'
   document.getElementById('LoggedInUser').style.display = 'block';
   document.getElementById('LoggedInUser').innerHTML = "logged in as <a href=\"#\" title=\"click to log out\">" + username + "</a>";
-  document.getElementById('album-content').style.display = 'block';
+  var content = document.getElementById('album-content');
+  content.style.display = 'block';
 }
 
 function handleLogout() {
@@ -69,6 +49,7 @@ function handleLogout() {
 
 function resetAuthFields() {
   if (document.getElementById('login-username') != null) {
+    document.getElementById('auth-view').style.display = 'block'
     document.getElementById('login-username').value = ''
     document.getElementById('login-password').value = ''
     document.getElementById('login-error').innerText = ''
@@ -84,13 +65,17 @@ function resetAuthFields() {
 }
 
 function initListeners() {
+  console.log('entering initListeners');
+
   document.getElementById('signup-form').addEventListener('submit', handleSignUp)
   document.getElementById('login-form').addEventListener('submit', handleLogin)
-  document.getElementById('LoggedInUser').style.display = 'none';
-
+  
   var logoutLink = document.getElementById('LoggedInUser')
   logoutLink.onclick = function() { 
     handleLogout()
     return false;
   }
+  
+  console.log('leaving initListeners');
+
 }

@@ -554,6 +554,96 @@ sub GetSameMonthPrevYear ()
 	return $prevYear."-".$currentMonth;
 }
 
+# Patch for MakeAlbum.pl - created by claude.ai, simplifying some things.
+# In the MakePage subroutine, modify the HTML generation to include authentication
+# Add this after the <head> section and before the <body> content:
+
+sub generate_album_page_auth_head {
+    my $config = shift;
+    my $auth_html = "";
+    
+    if ($config->{UserBaseAppId}) {
+        $auth_html = <<AUTH_HTML;
+    <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
+    <script type="text/javascript" src="$config->{HomePageURL}$config->{AlbumPageURL}usermanagement.js"></script>
+AUTH_HTML
+    }
+    
+    return $auth_html;
+}
+
+sub generate_album_page_auth_body {
+    my $config = shift;
+    my $auth_body = "";
+    
+    if ($config->{UserBaseAppId}) {
+      $auth_body = <<AUTH_BODY;
+      <div id="auth-view" style="display: none;">
+        <div class="auth-message">
+          <h2>Authentication Required</h2>
+          <p>Please log in to view this album.</p>
+          <form id="login-form">
+            <input id="login-username" type="text" required placeholder="Username">
+            <input id="login-password" type="password" required placeholder="Password">
+            <input type="submit" value="Sign in">
+          </form>
+          <div id="login-error"></div>
+          
+          <h1>Create an account</h1>
+          <form id="signup-form">
+            <input id="signup-username" type="text" required placeholder="Username">
+            <input id="signup-email" type="text" required placeholder="email"></input>
+            <input id="signup-password" type="password" required placeholder="Password">
+            <input type="submit" value="Create an account">
+          </form>
+          <div id="signup-error"></div>
+          <p><a href="../$config->{MainPageName}">Return to main page</a></p>
+        </div>
+      </div>
+
+      <script>
+        userbase.init({ appId: '$config->{UserBaseAppId}' })
+        .then((session) => {
+          if (session.user) {
+            // User is logged in, show content
+            document.getElementById('auth-view').style.display = 'none';
+            document.body.style.display = 'block';
+            showUserLoggedIn(session.user.username);
+            initListeners();
+          } else {
+            // User not logged in, show login form
+            document.getElementById('auth-view').style.display = 'block';
+            document.body.style.display = 'none';
+            initListeners();
+          }
+        })
+        .catch(() => {
+          // Error or not logged in
+          document.getElementById('auth-view').style.display = 'block';
+          document.body.style.display = 'none';
+        });
+      </script>
+AUTH_BODY
+    }
+    
+    return $auth_body;
+}
+
+sub generate_album_page_auth_script {
+    my $config = shift;
+    my $auth_html = "";
+    
+    if ($config->{UserBaseAppId}) {
+      $auth_html = <<AUTH_HTML;
+      <script>
+        initListeners()
+      </script>
+AUTH_HTML
+    }
+    
+    return $auth_html;
+}
+
 #-----------------------------------------------------------------------------
 # Make thumbnails, html files, and and index html file for a certain
 # Output Directory, using all the photos in all its input directories.
@@ -1056,6 +1146,10 @@ sub MakePage ()
           $nextCell = $nextCell."$picCaptions[$index+1]<BR/>\n";
         }
 
+my $auth_head_html = &generate_album_page_auth_head($config);
+my $auth_body_html = &generate_album_page_auth_body($config);
+my $auth_script_html = &generate_album_page_auth_script($config);
+
 my $HTML = <<HTML;
 <!DOCTYPE html>
 <html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
@@ -1065,6 +1159,7 @@ my $HTML = <<HTML;
     <link href="../basic.css" rel="stylesheet" type="text/css">
     <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
     <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
+    $auth_head_html
   </head>
 HTML
   print (PICHTML $HTML);
@@ -1074,6 +1169,8 @@ HTML
 
 $HTML = <<HTML;
   <body>
+    $auth_body_html
+    <div id="album-content">
     <div id="header">
       <div class="toptitle">
         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
@@ -1081,6 +1178,13 @@ $HTML = <<HTML;
         <a href="$CurrentPageName.html">$DirDisplayName</a>
         <a href="javascript:void(window.open('slideshow.html?$index','slidecontrol','width=133,height=112,top=10,left=10,screenx=10,screeny=10'))">slideshow</a>
       </div>
+      <div class="rightalign">
+        <div id="logout-error"></div>
+        <div id="LoggedInUser">&nbsp;</div>
+        &nbsp;&nbsp;
+      </div>
+    </div>
+    $auth_script_html
 HTML
   print (PICHTML $HTML);
 
@@ -1168,7 +1272,7 @@ HTML
         print (PICHTML $HTML);
 
         print (PICHTML &PageFooter());
-        print (PICHTML "</body>\n</html>\n");
+        print (PICHTML "</div>\n</body>\n</html>\n");
 
         close PICHTML;
     } # end of loop over items in array
@@ -1249,6 +1353,10 @@ HTML
       &log ("  $index\n","debug");
       &log ("  $DirDisplayName has $numPhotos photos ($PageSize)\n","debug");
 
+my $auth_head_html = &generate_album_page_auth_head($config);
+my $auth_body_html = &generate_album_page_auth_body($config);
+my $auth_script_html = &generate_album_page_auth_script($config);
+
 my $HTML = <<HTML;
 <!DOCTYPE html>
 <html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
@@ -1258,12 +1366,15 @@ my $HTML = <<HTML;
     <link href="../basic.css" rel="stylesheet" type="text/css">
     <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
     <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
+    $auth_head_html
  </head>
 HTML
       print (OUTFILE $HTML);
 
 $HTML = <<HTML;
   <body>
+    $auth_body_html
+    <div id="album-content">
     <div id="header">
       <div class="toptitle">
         <a href="$config->{HomePageURL}">$config->{HomePageName}</a>
@@ -1271,6 +1382,12 @@ $HTML = <<HTML;
         <a href="$CurrentPageName.html">$DirDisplayName</a>
         <a href="javascript:void(window.open('slideshow.html?$index','slidecontrol','width=133,height=112,top=10,left=10,screenx=10,screeny=10'))">slideshow</a>
       </div>
+      <div class="rightalign">
+        <div id="logout-error"></div>
+        <div id="LoggedInUser">&nbsp;</div>
+        &nbsp;&nbsp;
+      </div>
+      $auth_script_html
 HTML
       print (OUTFILE $HTML);
 
@@ -1367,6 +1484,7 @@ $HTML = <<HTML;
 HTML
       print (OUTFILE $HTML);
       print (OUTFILE &PageFooter());
+      print (OUTFILE "</div>\n");
       print (OUTFILE "</body>\n");
       print (OUTFILE "</html>\n");
       close (OUTFILE);
@@ -1395,8 +1513,8 @@ HTML
       while (<SLIDEFILE>)
       {
         chomp;
-		my $infoHereTag = "-- INFOHERE --";
-		if (substr($_, 0, length($infoHereTag)) eq $infoHereTag)
+        my $infoHereTag = "-- INFOHERE --";
+        if (substr($_, 0, length($infoHereTag)) eq $infoHereTag)
         {
           &log ("Found INFOHERE tag, adding to OUTSLIDEFILE\n","debug");
           for ($index = 0; $index < @filenames; $index++)
@@ -1660,6 +1778,10 @@ sub make_frontpage ()
   &log ("creating front page '".$config->{AlbumDir}."/".$config->{MainPageName}."'\n","info");
   open (OUTFILE,$filename);
 
+my $auth_head_html = &generate_album_page_auth_head($config);
+my $auth_body_html = &generate_album_page_auth_body($config);
+my $auth_script_html = &generate_album_page_auth_script($config);
+
 $HTML = <<HTML;
 <!DOCTYPE html>
 <html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">
@@ -1671,24 +1793,16 @@ $HTML = <<HTML;
     <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
     <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
     <link rel="alternate" type="application/rss+xml" title="$config->{RSSDescription}" href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}" />
-    
+    $auth_head_html
 HTML
   print (OUTFILE $HTML);
   
-  if ($config->{UserBaseAppId}) {
-  
-    $HTML = <<HTML;
-    
-    <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
-    <script type="text/javascript" src="usermanagement.js"></script>
-HTML
-    print (OUTFILE $HTML);
-  }
-
   $HTML = <<HTML;
 
 </head>
   <body>
+    $auth_body_html
+    <div id="album-content">
     <div id="header" class="fullwidthcontainer">
       <div class="toptitle"><a href="$config->{HomePageURL}"> $config->{HomePageName}</a> $config->{PageTitle}</div>
       <div class="rightalign">
@@ -1697,43 +1811,13 @@ HTML
         &nbsp;&nbsp;
         <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a>
       </div>
-      <div class="spacer"/>
+    </div>
+    <div class="spacer"/>
+    $auth_script_html
 HTML
   print (OUTFILE $HTML);
 
-  if ($config->{UserBaseAppId}) {
-
-    $HTML = <<HTML;
-
-      <div id="auth-view">
-        <h1>Login</h1>
-        <form id="login-form">
-          <input id="login-username" type="text" required placeholder="Username">
-          <input id="login-password" type="password" required placeholder="Password">
-          <input id="LoginButton" type="submit" value="Sign in">
-        </form>
-        <div id="login-error"></div>
-
-        <h1>Create an account</h1>
-        <form id="signup-form">
-          <input id="signup-username" type="text" required placeholder="Username">
-          <input id="signup-email" type="text" required placeholder="email"></input>
-          <input id="signup-password" type="password" required placeholder="Password">
-          <input type="submit" value="Create an account">
-        </form>
-        <div id="signup-error"></div>
-      </div>
-
-      <script>
-        initListeners()
-      </script>
-    </div>
-    
-HTML
-    print (OUTFILE $HTML);
-  }
-  
-$HTML = <<HTML;
+  $HTML = <<HTML;
     
     <div class="spacer" id="album-content"/>
       <div id="wrapper">
@@ -1905,25 +1989,9 @@ HTML
       </div>
     </div><!-- close div#wrapper -->
     $footer
+    </div>
 HTML
     print (OUTFILE $HTML);
-    
-
-    # Iff userbaseappid is set, show login fields only and don't show content.
-    if ($config->{UserBaseAppId}) {
-    
-      my $SCRIPT = <<SCRIPT;
-      <!-- application code -->
-      <script type="text/javascript">
-        userbase.init({ appId: '$config->{UserBaseAppId}' })
-        .then((session) => session.user ? showUserLoggedIn(session.user.username) : resetAuthFields())
-        
-        document.getElementById('album-content').style.display = 'none';
-      </script>
-SCRIPT
-      
-      print (OUTFILE $SCRIPT);
-    }
 
     # Always close the body tag and the html tag.
     $HTML = <<HTML;
@@ -2189,6 +2257,10 @@ sub make_tagspages ()
 
   &log ("creating tags page '$filename'\n","info");
   open (OUTFILE,$filename);
+  
+  my $auth_head_html = &generate_album_page_auth_head($config);
+  my $auth_body_html = &generate_album_page_auth_body($config);
+  my $auth_script_html = &generate_album_page_auth_script($config);
 
 $HTML = <<HTML;
 <!DOCTYPE html>
@@ -2199,27 +2271,22 @@ $HTML = <<HTML;
     <link href="basic.css" rel="stylesheet" type="text/css">
     <link rel="icon" href="$config->{HomePageURL}$config->{WebIcon}" sizes="any">
     <link rel="apple-touch-icon" href="$config->{HomePageURL}$config->{WebIcon}">
-    <script type="text/javascript" src="https://sdk.userbase.com/2/userbase.js"></script>
-    <script type="text/javascript" src="usermanagement.js"></script>
+    $auth_head_html
   </head>
   <body>
+    $auth_body_html
     <div id="header">
     <div class="toptitle">
       <a href="$config->{HomePageURL}">$config->{HomePageName}</a> <a href="$config->{MainPageName}">$config->{PageTitle}</a> Tags
     </div>
     <div class="rightalign">
-      <input onclick="changeButton();showhide()" type="button" value="Show Login" id="LoginButton"></input>
+      <div id="logout-error"></div>
       <div id="LoggedInUser">&nbsp;</div>
+      &nbsp;&nbsp;
     </div>
     
     <div class="spacer"/>
-
-      <div class="toggle-div hidden" id="authforms">
-      </div>
-
-      <script>
-        initListeners()
-      </script>
+    $auth_script_html
       
       
       <div class="spacer"/>
