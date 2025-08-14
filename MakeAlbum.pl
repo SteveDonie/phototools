@@ -48,6 +48,10 @@ my $JavaMemSize = 800;  # megabytes of memory Java might need to resize photos
                         # don't set this too high - if too high, it uses
                         # virtual memory, which thrashes the disk.
 my $XMLLogName;
+# facial recognition stuff
+my $FaceRecognitionEnabled = 0;
+my %FaceRecognitionStats = ();
+
 
 ## convert numbers to names
 my %monthname=('01','January',
@@ -108,6 +112,7 @@ my $starttime = time;
 open (XMLLOG,">".$XMLLogName);
 &start_log ();
 &log_config ();
+&InitializeFaceRecognition();
 &calc_final_dirs ();
 &GetStopWords (); # have to do this here so stopwords aren't added during photo processing
 &make_dirs ();
@@ -685,6 +690,204 @@ AUTH_HTML
 }
 
 #-----------------------------------------------------------------------------
+# Initialize face recognition system
+sub InitializeFaceRecognition {
+    # Check if face recognition is enabled in config
+    if (!exists $config->{EnableFaceRecognition} || !$config->{EnableFaceRecognition}) {
+        $FaceRecognitionEnabled = 0;
+        return;
+    }
+
+    # Set defaults for face recognition config
+    $config->{FaceTrainingDir} //= 'faces';
+    $config->{FaceConfidenceThreshold} //= 0.6;
+    $config->{UnknownFaceHandling} //= 'detect';
+
+    print ("---------------- Checking if Python and required modules are available -------------------\n");
+    my $result = "";
+    my $check_cmd = 'python -c "import face_recognition, cv2, numpy, pickle; print(\'OK\')" 2>&1';
+    open(my $cmd, '-|', $check_cmd) or die "Failed to execute command: $!";
+    while (my $line = <$cmd>) {
+      &log ($line,"debug");
+      $result += $line;
+    }
+    close($cmd);
+    if ($? != 0 || $result =~ /OK/) {
+        &log("result from check_cmd '$check_cmd' was '$result'\n", "info");
+        &log("Face recognition disabled: Python dependencies not found\n", "info");
+        &log("To enable: pip install face_recognition opencv-python numpy\n", "info");
+        $FaceRecognitionEnabled = 0;
+        die "Face recognition requested in config, but not configured correctly\n";
+        return;
+    }
+
+    # Check if trained model exists
+    if (!-e "face_encodings.pkl") {
+        &log("Face recognition disabled: No trained model found\n", "info");
+        &log("To enable: Run 'perl TrainFaces.pl train' first\n", "info");
+        $FaceRecognitionEnabled = 0;
+        die "Face recognition requested in config, but not configured correctly\n";
+        return;
+    }
+
+    $FaceRecognitionEnabled = 1;
+    &log("Face recognition enabled\n", "info");
+
+    # Get model statistics. works on the command line, but not when run from perl. ????
+    print ("---------------- Checking face recognition model stats -------------------\n");
+    my $stats_output = "";
+    my $stats_cmd = 'python face_recognizer.py stats 2>&1';
+    open(my $cmd, '-|', $stats_cmd) or die "Failed to execute command: $!";
+    while (my $line = <$cmd>) {
+      &log ($line,"info");
+      $stats_output += $line;
+    }
+    close($cmd);
+    
+    if ($? == 0) {
+        &log("result of successful stats_cmd '$stats_cmd' was '$stats_output'\n", "debug");
+        # this isn't working because the status output has warnings in it, not valid JSON
+        eval {
+            use JSON;
+            my $stats = decode_json($stats_output);
+            %FaceRecognitionStats = %$stats;
+            &log("Face recognition model loaded: " . 
+                 $stats->{unique_people} . " people, " . 
+                 $stats->{total_encodings} . " face encodings\n", "info");
+        };
+    } else {
+        &log("result of failed stats_cmd '$stats_cmd' was '$stats_output'\n", "info");
+    }
+
+}
+
+#-----------------------------------------------------------------------------
+# Recognize faces in a photo and update caption file
+sub ProcessFaceRecognition {
+    my $InputPicFileFullName = $_[0];  # Full path to original photo
+    my $picpath = $_[1];               # Relative path (e.g., "2024-01")
+    my $picname = $_[2];               # Filename without extension
+    my $CaptionFileName = $_[3];       # Full path to caption file
+
+    return unless $FaceRecognitionEnabled;
+
+    &log("Processing face recognition for $picname\n", "info");
+
+    # Run face recognition on the image
+    my $recognize_cmd = "python face_recognizer.py recognize '$InputPicFileFullName' 2>nul";
+    my $result_json = `$recognize_cmd`;
+
+    if ($? != 0) {
+        &log("Face recognition failed for $picname\n", "debug");
+        return;
+    }
+
+    # Parse the JSON result
+    my @recognized_faces = ();
+    eval {
+        use JSON;
+        my $result = decode_json($result_json);
+        @recognized_faces = @{$result->{recognized_faces}};
+    };
+
+    if ($@) {
+        &log("Error parsing face recognition result for $picname: $@\n", "debug");
+        return;
+    }
+
+    # Filter out unknown faces if configured to ignore them
+    if ($config->{UnknownFaceHandling} eq 'ignore') {
+        @recognized_faces = grep { $_ ne 'Unknown Person' } @recognized_faces;
+    }
+
+    return unless @recognized_faces;
+
+    &log("Found faces in $picname: " . join(", ", @recognized_faces) . "\n", "verbose");
+
+    # Update or create caption file
+    &UpdateCaptionFileWithFaces($CaptionFileName, $picname, @recognized_faces);
+}
+
+#-----------------------------------------------------------------------------
+# Update caption file with recognized faces
+sub UpdateCaptionFileWithFaces {
+    my $CaptionFileName = shift;
+    my $picname = shift;
+    my @recognized_faces = @_;
+
+    my $existing_name_content = "";
+    my $existing_caption_content = "";
+    my $existing_comment_content = "";
+    my $has_existing_file = 0;
+
+    # Read existing caption file if it exists
+    if (-e $CaptionFileName) {
+        $has_existing_file = 1;
+        ($existing_name_content, $existing_caption_content, $existing_comment_content) = 
+            &ReadCaptionFile($CaptionFileName);
+        
+        # Remove newlines for processing
+        $existing_name_content =~ s/\n/ /g;
+        $existing_caption_content =~ s/<br\/>/ /g;
+        $existing_comment_content =~ s/<br\/>/ /g;
+    }
+
+    # Combine existing names with new faces, removing duplicates
+    my @all_names = ();
+    
+    # Add existing names
+    if ($existing_name_content) {
+        push @all_names, split(/\s+/, $existing_name_content);
+    }
+    
+    # Add recognized faces
+    push @all_names, @recognized_faces;
+    
+    # Remove duplicates while preserving order
+    my %seen = ();
+    my @unique_names = grep { !$seen{$_}++ } @all_names;
+    
+    # Filter out empty strings
+    @unique_names = grep { $_ && $_ ne '' } @unique_names;
+
+    return unless @unique_names; # Nothing to do if no names
+
+    my $names_line = join(" ", @unique_names);
+
+    # Create or update the caption file
+    open(my $fh, '>', $CaptionFileName) or do {
+        &log("Error: Cannot write caption file $CaptionFileName: $!\n", "info");
+        return;
+    };
+
+    print $fh "<!-- THUMBSPART:name -->\n";
+    print $fh "$names_line\n";
+    print $fh "<!-- THUMBSPART:caption -->\n";
+    if ($existing_caption_content) {
+        print $fh "$existing_caption_content\n";
+    } else {
+        # Generate a default caption based on faces found
+        if (@recognized_faces == 1) {
+            print $fh "$recognized_faces[0]\n";
+        } elsif (@recognized_faces > 1) {
+            my $last_name = pop @recognized_faces;
+            print $fh join(", ", @recognized_faces) . " and $last_name\n";
+        }
+    }
+    print $fh "<!-- THUMBSPART:comment -->\n";
+    if ($existing_comment_content) {
+        print $fh "$existing_comment_content\n";
+    } else {
+        print $fh "Faces automatically detected\n";
+    }
+
+    close($fh);
+
+    my $action = $has_existing_file ? "Updated" : "Created";
+    &log("$action caption file for $picname with faces: $names_line\n", "verbose");
+}
+
+#-----------------------------------------------------------------------------
 # Make thumbnails, html files, and and index html file for a certain
 # Output Directory, using all the photos in all its input directories.
 #
@@ -960,6 +1163,9 @@ sub MakePage ()
       print (RESIZELIST "$InputPicFileFullNames[$index]::$NewLargeFullNames[$index]\n");
       close (RESIZELIST);
     }
+
+    # Process face recognition for this image
+    &ProcessFaceRecognition($InputPicFileFullNames[$index], $picpath, $picnames[$index], $CaptionFileNames[$index]);
 
     $index++;
   }
