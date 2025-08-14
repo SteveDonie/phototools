@@ -28,8 +28,9 @@
   # This is for more rapid interation when just working on the front page
   SkipMakeDirs => 0,
 
-  # for userbase login stuff - see QuickStart at https://userbase.com/docs/quickstart
-  #UserBaseAppId => "b6a8348d-da63-495e-9600-e4f3368cc3f3",
+  # No login for projects album 
+  #UserBaseAppId => "",
+  
   # set filename of main page:
   MainPageName => "index.html",
 
