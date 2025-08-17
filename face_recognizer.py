@@ -59,11 +59,12 @@ class FaceRecognizer:
             if not os.path.isdir(person_path):
                 continue
                 
-            print(f"  Training on photos of {person_dir}...")
             
             # Process each image in the person's directory
             image_files = [f for f in os.listdir(person_path) 
                           if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
+
+            print(f"  Training on {len(image_files)} photos of {person_dir}...")
             
             if not image_files:
                 print(f"    Warning: No image files found in {person_path}")
@@ -90,7 +91,7 @@ class FaceRecognizer:
                 except Exception as e:
                     print(f"    Error processing {image_file}: {e}")
             
-            print(f"    Found {faces_found} usable face(s) for {person_dir}")
+            print(f"    Found {faces_found} usable face(s) for {person_dir} containing {len(image_files)} image files")
         
         if len(self.known_face_encodings) > 0:
             self.save_model()
@@ -100,7 +101,7 @@ class FaceRecognizer:
             print("No faces were successfully encoded during training!")
             return False
     
-    def recognize_faces_in_image(self, image_path, unknown_label="Unknown Person"):
+    def recognize_faces_in_image(self, image_path, unknown_label="@UnknownPerson"):
         """
         Recognize faces in a single image
         Returns list of recognized names
