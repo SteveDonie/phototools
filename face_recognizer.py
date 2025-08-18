@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-face_recognizer.py
 Face Recognition Module for Photo Album Generator
 Integrates with MakeAlbum.pl to detect and identify faces in photos
 """
 
-import face_recognition_models
 import face_recognition
 import cv2
 import numpy as np
@@ -59,12 +57,11 @@ class FaceRecognizer:
             if not os.path.isdir(person_path):
                 continue
                 
+            print(f"  Training on photos of {person_dir}...")
             
             # Process each image in the person's directory
             image_files = [f for f in os.listdir(person_path) 
                           if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
-
-            print(f"  Training on {len(image_files)} photos of {person_dir}...")
             
             if not image_files:
                 print(f"    Warning: No image files found in {person_path}")
@@ -91,7 +88,7 @@ class FaceRecognizer:
                 except Exception as e:
                     print(f"    Error processing {image_file}: {e}")
             
-            print(f"    Found {faces_found} usable face(s) for {person_dir} containing {len(image_files)} image files")
+            print(f"    Found {faces_found} usable face(s) for {person_dir}")
         
         if len(self.known_face_encodings) > 0:
             self.save_model()
@@ -101,10 +98,11 @@ class FaceRecognizer:
             print("No faces were successfully encoded during training!")
             return False
     
-    def recognize_faces_in_image(self, image_path, unknown_label="@UnknownPerson"):
+    def recognize_faces_in_image(self, image_path, unknown_label="@UnknownPerson", save_unknown_faces=False, unknown_faces_dir=None):
         """
         Recognize faces in a single image
         Returns list of recognized names
+        Optionally saves unknown faces to specified directory
         """
         if not os.path.exists(image_path):
             return []
@@ -122,8 +120,9 @@ class FaceRecognizer:
             face_encodings = face_recognition.face_encodings(image, face_locations)
             
             recognized_names = []
+            unknown_face_count = 0
             
-            for face_encoding in face_encodings:
+            for i, face_encoding in enumerate(face_encodings):
                 # Compare with known faces
                 matches = face_recognition.compare_faces(
                     self.known_face_encodings, 
@@ -132,6 +131,7 @@ class FaceRecognizer:
                 )
                 
                 name = unknown_label
+                is_unknown = True
                 
                 # If we found matches, use the best one
                 if True in matches:
@@ -146,13 +146,14 @@ class FaceRecognizer:
                     
                     if matches[best_match_index] and face_distances[best_match_index] < (1.0 - self.confidence_threshold):
                         name = self.known_face_names[best_match_index]
-                else:
-                    # would be nice to save the unknown face to the training directory 
-                    # so we could name them
-                    name = name
-                    #print(f"unknown face in {image_path} at {face_locations}")
+                        is_unknown = False
                 
                 recognized_names.append(name)
+                
+                # Save unknown faces if requested
+                if is_unknown and save_unknown_faces and unknown_faces_dir:
+                    self._save_unknown_face(image, face_locations[i], image_path, unknown_face_count, unknown_faces_dir)
+                    unknown_face_count += 1
             
             # Remove duplicates while preserving order
             unique_names = []
@@ -165,6 +166,58 @@ class FaceRecognizer:
         except Exception as e:
             print(f"Error processing {image_path}: {e}")
             return []
+    
+    def _save_unknown_face(self, image, face_location, source_image_path, face_index, unknown_faces_dir):
+        """
+        Save a cropped unknown face to the unknown faces directory
+        """
+        try:
+            # Ensure unknown faces directory exists
+            if not os.path.exists(unknown_faces_dir):
+                os.makedirs(unknown_faces_dir)
+            
+            # Extract face location coordinates
+            top, right, bottom, left = face_location
+            
+            # Add some padding around the face (10% on each side)
+            height = bottom - top
+            width = right - left
+            padding_h = int(height * 0.1)
+            padding_w = int(width * 0.1)
+            
+            # Expand the crop area with padding, ensuring we don't go outside image bounds
+            top = max(0, top - padding_h)
+            bottom = min(image.shape[0], bottom + padding_h)
+            left = max(0, left - padding_w)
+            right = min(image.shape[1], right + padding_w)
+            
+            # Crop the face from the image
+            face_image = image[top:bottom, left:right]
+            
+            # Convert from RGB to BGR for OpenCV
+            face_image_bgr = cv2.cvtColor(face_image, cv2.COLOR_RGB2BGR)
+            
+            # Generate filename based on source image
+            source_filename = os.path.basename(source_image_path)
+            source_name, source_ext = os.path.splitext(source_filename)
+            
+            # Create unique filename for this face
+            face_filename = f"{source_name}_face{face_index:02d}.jpg"
+            face_path = os.path.join(unknown_faces_dir, face_filename)
+            
+            # Don't overwrite existing files
+            counter = 1
+            while os.path.exists(face_path):
+                face_filename = f"{source_name}_face{face_index:02d}_{counter:02d}.jpg"
+                face_path = os.path.join(unknown_faces_dir, face_filename)
+                counter += 1
+            
+            # Save the face image
+            cv2.imwrite(face_path, face_image_bgr)
+            print(f"Saved unknown face: {face_filename}")
+            
+        except Exception as e:
+            print(f"Error saving unknown face from {source_image_path}: {e}")
     
     def get_stats(self):
         """Get statistics about the trained model"""
@@ -183,9 +236,12 @@ def main():
     """Command line interface for face recognition"""
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python face_recognizer.py train                    # Train the model")
-        print("  python face_recognizer.py recognize <image_path>   # Recognize faces in image")
-        print("  python face_recognizer.py stats                    # Show model statistics")
+        print("  python face_recognizer.py train                                    # Train the model")
+        print("  python face_recognizer.py recognize <image_path> [options]         # Recognize faces in image")
+        print("    Options:")
+        print("      --save-unknown                     # Save unknown faces to directory")
+        print("      --unknown-dir <path>               # Directory for unknown faces (default: faces/Unknown)")
+        print("  python face_recognizer.py stats                                    # Show model statistics")
         sys.exit(1)
     
     recognizer = FaceRecognizer()
@@ -202,8 +258,23 @@ def main():
             sys.exit(1)
         
         image_path = sys.argv[2]
-        names = recognizer.recognize_faces_in_image(image_path)
-        # need to have this return locations of unknown faces
+        
+        # Check for optional parameters
+        save_unknown = "--save-unknown" in sys.argv
+        unknown_dir = None
+        
+        if save_unknown:
+            # Look for --unknown-dir parameter
+            try:
+                unknown_dir_index = sys.argv.index("--unknown-dir")
+                if unknown_dir_index + 1 < len(sys.argv):
+                    unknown_dir = sys.argv[unknown_dir_index + 1]
+                else:
+                    unknown_dir = "faces/Unknown"
+            except ValueError:
+                unknown_dir = "faces/Unknown"
+        
+        names = recognizer.recognize_faces_in_image(image_path, save_unknown_faces=save_unknown, unknown_faces_dir=unknown_dir)
         
         # Output as JSON for easy parsing by Perl
         result = {
