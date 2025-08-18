@@ -146,6 +146,11 @@ class FaceRecognizer:
                     
                     if matches[best_match_index] and face_distances[best_match_index] < (1.0 - self.confidence_threshold):
                         name = self.known_face_names[best_match_index]
+                else:
+                    # would be nice to save the unknown face to the training directory 
+                    # so we could name them
+                    name = name
+                    #print(f"unknown face in {image_path} at {face_locations}")
                 
                 recognized_names.append(name)
             
@@ -198,6 +203,7 @@ def main():
         
         image_path = sys.argv[2]
         names = recognizer.recognize_faces_in_image(image_path)
+        # need to have this return locations of unknown faces
         
         # Output as JSON for easy parsing by Perl
         result = {
