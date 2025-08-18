@@ -1,0 +1,13 @@
+build==1.2.2.post1
+click==8.2.1
+colorama==0.4.6
+dlib==20.0.0
+face-recognition==1.3.0
+face_recognition_models @ file:///C:/Users/steve/personal/face_recognition_models
+numpy==2.2.6
+opencv-python==4.12.0.88
+packaging==25.0
+pillow==11.3.0
+pyproject_hooks==1.2.0
+scipy @ file:///C:/Users/steve/Downloads/scipy-1.15.3-cp313-cp313-win_amd64.whl#sha256=32514f6c839ad23f86bf873bc430361f3e9c52dcd0d795eee2d72b36b7eaf266
+setuptools==80.9.0
