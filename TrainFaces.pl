@@ -62,14 +62,16 @@ if (!$config->{EnableFaceRecognition}) {
 
 my $training_dir = $config->{FaceTrainingDir};
 my @family_members = (
-    "Julie Donie",
-    "Jordan Donie", 
-    "Lee Donie",
-    "Scott Donie",
-    "Rol Donie",
-    "Judy Donie",
-    "Mike Donie",
-    "Steve Donie"
+    "\@JulieDonie",
+    "\@JordanDonie", 
+    "\@LeeDonie",
+    "\@ScottDonie",
+    "\@RolDonie",
+    "\@JudyDonie",
+    "\@MikeDonie",
+    "\@SteveDonie",
+    "\@KatieRaver",
+    "\@BryanSloane"
 );
 
 print "Setting up training directories in '$training_dir'...\n";
@@ -120,7 +122,7 @@ if (@ARGV > 0 && $ARGV[-1] eq 'train') {
     print "Training directories created:\n";
     foreach my $person (@family_members) {
         my $person_dir = "$training_dir/$person";
-        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp,JPG,JPEG,PNG,BMP}");
+        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
         my $count = scalar(@files);
         print "  $person: $count training photos in $person_dir\n";
 #        foreach my $photoname (@files) {
@@ -134,7 +136,7 @@ sub train_model {
     
     # Check if required Python packages are installed
     my $check_cmd = 'python -c "import face_recognition, cv2, numpy, pickle; print(\'Dependencies OK\')"';
-    my $result = `$check_cmd 2>&1`;
+    my $result = `$check_cmd 2>nul`;
     
     if ($? != 0) {
         print "Error: Required Python packages not found.\n";
@@ -151,7 +153,7 @@ sub train_model {
     my $total_photos = 0;
     foreach my $person (@family_members) {
         my $person_dir = "$training_dir/$person";
-        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp,JPG,JPEG,PNG,BMP}");
+        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
         my $count = scalar(@files);
         $total_photos += $count;
         if ($count == 0) {
@@ -171,7 +173,7 @@ sub train_model {
     
     # Run the Python training
     my $train_cmd = "python face_recognizer.py train";
-    system($train_cmd);
+    $result = `$train_cmd 2>nul`;
     
     if ($? == 0) {
         print "\nTraining completed successfully!\n";
@@ -179,7 +181,7 @@ sub train_model {
         
         # Show stats
         my $stats_cmd = "python face_recognizer.py stats";
-        my $stats_output = `$stats_cmd`;
+        my $stats_output = `$stats_cmd 2>nul`;
         if ($? == 0) {
             print "Model statistics:\n";
             print $stats_output;
