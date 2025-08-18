@@ -297,6 +297,7 @@ sub calc_final_dirs ()
   my @SecondLevelDirs;
   for my $dir (@PhotoDirs) {
     my $fulldir = $config->{PhotosDir}."/".$dir;
+    $fulldir = File::Spec->canonpath( $fulldir ) ;
     opendir(DIR, $fulldir) || die "can't open directory '$fulldir': $!";
     @jpgfiles = grep {-f "$fulldir/$_" and
                            /jpg$/i
@@ -320,6 +321,7 @@ sub calc_final_dirs ()
 
   for my $dir (@PhotoDirs) {
     my $fulldir = $config->{PhotosDir}."/".$dir;
+    $fulldir = File::Spec->canonpath( $fulldir ) ;
 
     whichdir: for my $includedir (@IncludeDirs) {
       &log ("checking if $fulldir matches include pattern $includedir ","debug");
@@ -736,7 +738,7 @@ sub InitializeFaceRecognition {
     # Get model statistics. works on the command line, but not when run from perl. ????
     print ("---------------- Checking face recognition model stats -------------------\n");
     my $stats_output = "";
-    my $stats_cmd = 'python face_recognizer.py stats 2>&1';
+    my $stats_cmd = 'python face_recognizer.py stats 2>StatsErrors.txt';
     open(my $cmd, '-|', $stats_cmd) or die "Failed to execute command: $!";
     while (my $line = <$cmd>) {
       &log ($line,"info");
@@ -762,23 +764,162 @@ sub InitializeFaceRecognition {
 }
 
 #-----------------------------------------------------------------------------
+# Check if face recognition is needed for this photo
+sub NeedsFaceRecognition {
+    my $InputPicFileFullName = $_[0];  # Full path to original photo
+    my $InfoFileName = $_[1];          # Full path to .info file
+    
+    &log("checking if $InputPicFileFullName needs face recognition\n", "debug");
+    
+    return 1 unless $FaceRecognitionEnabled;
+
+    # Force rescan if configured
+    return 1 if $config->{ForceFaceRescan};
+      
+    # If no info file exists, we need to process
+    if (-e $InfoFileName) {
+      &log("   info file exists, checking timestamps\n", "debug");
+    } else {
+      &log("   info file does not exist, needs face recognition\n", "debug");
+      return 1 unless -e $InfoFileName;
+    }
+
+    
+    # Get timestamps
+    my $photo_mtime = stat($InputPicFileFullName)->mtime;
+    my $model_mtime = stat("face_encodings.pkl")->mtime;
+    
+    # Read the info file to check face recognition cache info
+    my ($last_face_scan, $last_model_time) = &ReadFaceRecognitionInfo($InfoFileName);
+    
+    # Need to process if:
+    # 1. Never been face-scanned before
+    # 2. Photo is newer than last face scan
+    # 3. Face recognition model is newer than when this photo was last scanned
+    &log("   last_face_scan is $last_face_scan, photo_mtime is $photo_mtime\n", "debug");
+    &log("   model_mtime is $model_mtime, last_model_time is $last_model_time\n", "debug");
+
+    if (!$last_face_scan || 
+        $photo_mtime > $last_face_scan || 
+        $model_mtime > $last_model_time) {
+        &log("   times indicate need face recognition\n", "debug");
+        return 1;
+    }
+    
+    &log("   times indicate no need for face recognition\n", "debug");
+    return 0;
+}
+
+#-----------------------------------------------------------------------------
+# Read face recognition cache info from .info file
+sub ReadFaceRecognitionInfo {
+    my $InfoFileName = $_[0];
+    my $last_face_scan = 0;
+    my $last_model_time = 0;
+    
+    return ($last_face_scan, $last_model_time) unless -e $InfoFileName;
+    
+    open(my $fh, '<', $InfoFileName) or return ($last_face_scan, $last_model_time);
+    
+    my $state = "none";
+    while (my $line = <$fh>) {
+        chomp $line;
+        if ($line =~ /^<!--/) {
+            if ($line eq "<!-- FACE:last_scan -->") {
+                $state = "last_scan";
+            } elsif ($line eq "<!-- FACE:model_time -->") {
+                $state = "model_time";
+            } else {
+                $state = "none";
+            }
+        } else {
+            if ($state eq "last_scan") {
+                $last_face_scan = $line;
+            } elsif ($state eq "model_time") {
+                $last_model_time = $line;
+            }
+        }
+    }
+    close($fh);
+    &log("last face scan: $last_face_scan\nlast model time: $last_model_time\n","debug");
+    return ($last_face_scan, $last_model_time);
+}
+
+#-----------------------------------------------------------------------------
+# Update .info file with face recognition cache info
+sub UpdateFaceRecognitionInfo {
+    my $InfoFileName = $_[0];
+    my $current_time = time;
+    my $model_time = (stat("face_encodings.pkl"))[9];
+    
+    # Read existing info file content, filtering out old face recognition data
+    my $existing_content = "";
+    if (-e $InfoFileName) {
+        open(my $fh, '<', $InfoFileName) or return;
+        
+        my $skip_next_line = 0;
+        while (my $line = <$fh>) {
+            if ($line =~ /^<!-- FACE:/) {
+                # Skip face recognition comment lines and set flag to skip next line (the timestamp)
+                $skip_next_line = 1;
+                next;
+            }
+            
+            if ($skip_next_line) {
+                # Skip the timestamp line that follows a FACE: comment
+                $skip_next_line = 0;
+                next;
+            }
+            
+            # Keep all other lines
+            $existing_content .= $line;
+        }
+        close($fh);
+    }
+    
+    # Write back with face recognition info appended
+    open(my $fh, '>', $InfoFileName) or do {
+        &log("Warning: Cannot update face recognition info in $InfoFileName: $!\n", "verbose");
+        return;
+    };
+    
+    print $fh $existing_content;
+    print $fh "<!-- FACE:last_scan -->\n";
+    print $fh "$current_time\n";
+    print $fh "<!-- FACE:model_time -->\n";
+    print $fh "$model_time\n";
+    
+    close($fh);
+}
+
+#-----------------------------------------------------------------------------
 # Recognize faces in a photo and update caption file
 sub ProcessFaceRecognition {
     my $InputPicFileFullName = $_[0];  # Full path to original photo
     my $picpath = $_[1];               # Relative path (e.g., "2024-01")
     my $picname = $_[2];               # Filename without extension
     my $CaptionFileName = $_[3];       # Full path to caption file
+    my $InfoFileName = $_[4];          # Full path to .info file
+
+    &log ("+","progress");
 
     return unless $FaceRecognitionEnabled;
 
-    &log("Processing face recognition for $picname\n", "info");
+    # Check if we need to process this photo
+    unless (&NeedsFaceRecognition($InputPicFileFullName, $InfoFileName)) {
+        &log("Skipping face recognition for $picname (cached)\n", "verbose");
+        return;
+    }
+
+    &log("Processing face recognition for $InputPicFileFullName\n", "verbose");
 
     # Run face recognition on the image
-    my $recognize_cmd = "python face_recognizer.py recognize '$InputPicFileFullName' 2>nul";
+    my $recognize_cmd = "python face_recognizer.py recognize \"$InputPicFileFullName\" 2>nul";
     my $result_json = `$recognize_cmd`;
+    &log("result_json is\n$result_json", "debug");
 
     if ($? != 0) {
-        &log("Face recognition failed for $picname\n", "debug");
+        &log("Face recognition failed for $picname\n", "info");
         return;
     }
 
@@ -791,7 +932,7 @@ sub ProcessFaceRecognition {
     };
 
     if ($@) {
-        &log("Error parsing face recognition result for $picname: $@\n", "debug");
+        &log("Error parsing face recognition result for $picname: $@\n", "info");
         return;
     }
 
@@ -800,12 +941,16 @@ sub ProcessFaceRecognition {
         @recognized_faces = grep { $_ ne 'Unknown Person' } @recognized_faces;
     }
 
-    return unless @recognized_faces;
+    # Update face recognition cache info regardless of whether faces were found
+    &UpdateFaceRecognitionInfo($InfoFileName);
 
-    &log("Found faces in $picname: " . join(", ", @recognized_faces) . "\n", "verbose");
-
-    # Update or create caption file
-    &UpdateCaptionFileWithFaces($CaptionFileName, $picname, @recognized_faces);
+    if (@recognized_faces) {
+        &log("Found faces in $picname: " . join(", ", @recognized_faces) . "\n", "info");
+        # Update or create caption file
+        &UpdateCaptionFileWithFaces($CaptionFileName, $picname, @recognized_faces);
+    } else {
+        &log("No faces found in $picname\n", "verbose");
+    }
 }
 
 #-----------------------------------------------------------------------------
@@ -867,6 +1012,7 @@ sub UpdateCaptionFileWithFaces {
         print $fh "$existing_caption_content\n";
     } else {
         # Generate a default caption based on faces found
+        print $fh "Automatically recognized ";
         if (@recognized_faces == 1) {
             print $fh "$recognized_faces[0]\n";
         } elsif (@recognized_faces > 1) {
@@ -884,7 +1030,7 @@ sub UpdateCaptionFileWithFaces {
     close($fh);
 
     my $action = $has_existing_file ? "Updated" : "Created";
-    &log("$action caption file for $picname with faces: $names_line\n", "verbose");
+    &log("$action caption file for $picname with faces: $names_line\n", "info");
 }
 
 #-----------------------------------------------------------------------------
@@ -1097,9 +1243,17 @@ sub MakePage ()
     $NewLargeFullNames[$index] = $NewFullDir."/".$NewFileNames[$index].".jpg";
     $NewSmallFullNames[$index] = $NewFullDir."/".$NewFileNames[$index]."_sm.jpg";
     $HTMLFileNames[$index] = $NewFullDir."/".$NewFileNames[$index].".htm";
-    $CaptionFileNames[$index] = $BasePhotosDir."/".$picnames[$index].".txt";
+    $CaptionFileNames[$index] = $BasePhotosDir."/".$picpath."/".$picnames[$index].".txt";
     $InfoFileNames[$index] = $NewFullDir."/".$NewFileNames[$index].".info";
     $InfoSmallFileNames[$index] = $NewFullDir."/".$NewFileNames[$index]."_sm.info";
+
+    $InputPicFileFullNames[$index] = File::Spec->canonpath($InputPicFileFullNames[$index]) ;
+    $NewLargeFullNames[$index] = File::Spec->canonpath($NewLargeFullNames[$index]);
+    $NewSmallFullNames[$index] = File::Spec->canonpath($NewSmallFullNames[$index]);
+    $HTMLFileNames[$index] = File::Spec->canonpath($HTMLFileNames[$index]);
+    $CaptionFileNames[$index] = File::Spec->canonpath($CaptionFileNames[$index]);
+    $InfoFileNames[$index] = File::Spec->canonpath($InfoFileNames[$index]);
+    $InfoSmallFileNames[$index] = File::Spec->canonpath($InfoSmallFileNames[$index]);
 
     my $OriginalFileStat = stat($InputPicFileFullNames[$index]);
 
@@ -1165,11 +1319,12 @@ sub MakePage ()
     }
 
     # Process face recognition for this image
-    &ProcessFaceRecognition($InputPicFileFullNames[$index], $picpath, $picnames[$index], $CaptionFileNames[$index]);
+    &ProcessFaceRecognition($InputPicFileFullNames[$index], $picpath, $picnames[$index], $CaptionFileNames[$index], $InfoFileNames[$index]);
 
     $index++;
   }
-  #die "end of test";
+  &log ("\n","progress");
+ #die "end of test";
   &log ("finished going over filenames. NeedSmall=$NeedSmall NeedLarge=$NeedLarge NeedNewHTML=$NeedNewHTML\n","debug");
 
 
@@ -1745,7 +1900,7 @@ HTML
     {
       if ($Verbose or $Debug)
       {
-        &log ("Creating slidesshow Page\n","info");
+        &log ("Creating slide show page\n","info");
       }
       else
       {
@@ -2363,7 +2518,8 @@ sub AddTags ()
     	# this is not complete, but it reasonable for my needs - remove html tags
     	s/<(?:[^>'"]*|(['"]).*?\1)*>//gs;
     	# next remove non-alphanumeric
-    	tr/a-zA-Z0-9//cd;
+      # Want to keep the @ symbol for tags added by face recognition
+    	tr/a-zA-Z0-9@//cd;
     }
     &log ("adding tags (@tags) for picture $name\n",$loglevel);
     foreach my $tag (@tags)
@@ -2771,7 +2927,7 @@ sub GetLargestTagKey ()
 #
 sub makeTagPage()
 {
-  my $loglevel = "verbose";
+  my $loglevel = "debug";
   # make page for this tag
   my $thisTag = $_[0];
   my $HTML;
