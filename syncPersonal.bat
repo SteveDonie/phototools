@@ -3,6 +3,7 @@ echo Syncing all personal content from "%USERPROFILE%\albums to S3
 
 REM Copy index file to S3 
 aws s3 cp "%USERPROFILE%\albums\index.html" s3://album.donie.us/
+aws s3 cp "%USERPROFILE%\albums\resume-icon.jpg" s3://album.donie.us/
 
 echo Syncing resume
 aws s3 cp "%USERPROFILE%\Google Drive\Steve Donie" resume.pdf s3://album.donie.us/SteveResume.pdf
