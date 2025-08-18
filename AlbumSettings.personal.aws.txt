@@ -109,6 +109,8 @@
   FaceTrainingDir => 'faces',       # directory name, relative to phototools directory
   FaceConfidenceThreshold => 0.6,   # not sure what this is. Probably 0.0 - 1.0
   UnknownFaceHandling => 'detect',  # 'detect' or 'ignore'
+  SaveUnknownFaces => 1,                    # Enable unknown face extraction
+  UnknownFacesDir => 'faces/Unknown',       # Where to save them
 
   # directories to skip when making albums, can also include regular expressions
   # directories to skip when making albums, can also include regular expressions

@@ -90,6 +90,15 @@
   # url of Album page - a relative URL to the HomePage
   # it should have a trailing slash on it
   AlbumPageURL => "album/",
+  
+  # Facial recognition settings. More details on this in FaceRecognition.txt
+  EnableFaceRecognition => 1,       # 1 or 0
+  FaceTrainingDir => 'faces',       # directory name, relative to phototools directory
+  FaceConfidenceThreshold => 0.6,   # not sure what this is. Probably 0.0 - 1.0
+  UnknownFaceHandling => 'detect',  # 'detect' or 'ignore'
+  SaveUnknownFaces => 1,                    # Enable unknown face extraction
+  UnknownFacesDir => 'faces/Unknown',       # Where to save them
+
 
   # Comma separated list of directories/patterns to skip when making albums.
   # Can also include regular expressions.
