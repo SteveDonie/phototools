@@ -9,13 +9,14 @@
 #
 # There are two usages for this script. The first sets up the directory
 # structure.
+#
 # Usage: perl TrainFaces.pl [config_name]
 #
 # After running it this way, use the second usage to train the database
 # on those faces.
+# 
 # Usage: perl TrainFaces.pl [config name] train 
 #
-
 use strict;
 use warnings;
 use File::Path qw(make_path);
@@ -33,6 +34,7 @@ my $WhichAlbum = "default";
 
 if ($ARGV[0]) {
     if (-e "AlbumSettings.".$ARGV[0].".txt") {
+        print "Configuration file AlbumSettings.".$WhichAlbum.".txt found\n";
         $WhichAlbum = $ARGV[0];
     } else {
         die "Configuration file AlbumSettings.".$ARGV[0].".txt not found.\n";
@@ -40,9 +42,7 @@ if ($ARGV[0]) {
 }
 
 if (-e "AlbumSettings.".$WhichAlbum.".txt") {
-    print "Configuration file AlbumSettings.".$WhichAlbum.".txt found\n";
     $config = require "AlbumSettings.".$WhichAlbum.".txt";
-
     $config->{ConfigName} = $WhichAlbum;
 } else {
     die "Could not find configuration file AlbumSettings.".$WhichAlbum.".txt\n";
@@ -99,7 +99,7 @@ foreach my $person (@family_members) {
         print $fh "- Have the person looking roughly toward the camera\n";
         print $fh "- Preferably have only one person in the photo\n";
         print $fh "- Be in JPG, PNG, or other common image formats\n\n";
-        print $fh "After adding photos, run: perl TrainFaces.pl [configuration name] train\n";
+        print $fh "After adding photos, run: perl TrainFaces.pl train\n";
         close($fh);
     } else {
         print "  Directory for $person already exists\n";
@@ -115,19 +115,16 @@ if (@ARGV > 0 && $ARGV[-1] eq 'train') {
 } else {
     print "Next steps:\n";
     print "1. Add 3-10 clear photos of each person to their respective directories in '$training_dir'/\n";
-    print "2. Run: perl TrainFaces.pl [configuration name] train\n";
+    print "2. Run: perl TrainFaces.pl train\n";
     print "3. Test recognition: python face_recognizer.py recognize path/to/test/photo.jpg\n";
     print "4. Run MakeAlbum.pl normally - face recognition will be automatic!\n\n";
     
     print "Training directories created:\n";
     foreach my $person (@family_members) {
         my $person_dir = "$training_dir/$person";
-        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
+        my @files = glob("$person_dir/*.{jpg,jpeg,png,bmp}");
         my $count = scalar(@files);
-        print "  $person: $count training photos in $person_dir\n";
-#        foreach my $photoname (@files) {
-#          print "                       $photoname \n";
-#        }
+        print "  $person: $count training photos\n";
     }
 }
 
@@ -136,7 +133,7 @@ sub train_model {
     
     # Check if required Python packages are installed
     my $check_cmd = 'python -c "import face_recognition, cv2, numpy, pickle; print(\'Dependencies OK\')"';
-    my $result = `$check_cmd 2>nul`;
+    my $result = `$check_cmd 2>PythonCheck.txt`;
     
     if ($? != 0) {
         print "Error: Required Python packages not found.\n";
@@ -153,7 +150,7 @@ sub train_model {
     my $total_photos = 0;
     foreach my $person (@family_members) {
         my $person_dir = "$training_dir/$person";
-        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
+        my @files = glob("$person_dir/*.{jpg,jpeg,png,bmp}");
         my $count = scalar(@files);
         $total_photos += $count;
         if ($count == 0) {
