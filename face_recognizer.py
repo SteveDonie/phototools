@@ -214,7 +214,7 @@ class FaceRecognizer:
             
             # Save the face image
             cv2.imwrite(face_path, face_image_bgr)
-            print(f"Saved unknown face: {face_filename}")
+            #print(f"Saved unknown face: {face_filename}")
             
         except Exception as e:
             print(f"Error saving unknown face from {source_image_path}: {e}")
