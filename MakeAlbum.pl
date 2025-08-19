@@ -704,7 +704,10 @@ sub InitializeFaceRecognition {
     $config->{FaceTrainingDir} //= 'faces';
     $config->{FaceConfidenceThreshold} //= 0.6;
     $config->{UnknownFaceHandling} //= 'detect';
+    $config->{SaveUnknownFaces} //= 0;
+    $config->{UnknownFacesDir} //= 'faces/Unknown';
 
+    # Check if Python and required modules are available
     print ("---------------- Checking if Python and required modules are available -------------------\n");
     my $result = "";
     my $check_cmd = 'python -c "import face_recognition, cv2, numpy, pickle; print(\'OK\')" 2>&1';
@@ -735,7 +738,7 @@ sub InitializeFaceRecognition {
     $FaceRecognitionEnabled = 1;
     &log("Face recognition enabled\n", "info");
 
-    # Get model statistics. works on the command line, but not when run from perl. ????
+    # Get model statistics. 
     print ("---------------- Checking face recognition model stats -------------------\n");
     my $stats_output = "";
     my $stats_cmd = 'python face_recognizer.py stats 2>StatsErrors.txt';
@@ -748,19 +751,17 @@ sub InitializeFaceRecognition {
     
     if ($? == 0) {
         &log("result of successful stats_cmd '$stats_cmd' was '$stats_output'\n", "debug");
-        # this isn't working because the status output has warnings in it, not valid JSON
         eval {
             use JSON;
             my $stats = decode_json($stats_output);
             %FaceRecognitionStats = %$stats;
             &log("Face recognition model loaded: " . 
-                 $stats->{unique_people} . " people, " . 
-                 $stats->{total_encodings} . " face encodings\n", "info");
+            $stats->{unique_people} . " people, " . 
+            $stats->{total_encodings} . " face encodings\n", "info");
         };
     } else {
         &log("result of failed stats_cmd '$stats_cmd' was '$stats_output'\n", "info");
     }
-
 }
 
 #-----------------------------------------------------------------------------
@@ -772,18 +773,17 @@ sub NeedsFaceRecognition {
     &log("checking if $InputPicFileFullName needs face recognition\n", "debug");
     
     return 1 unless $FaceRecognitionEnabled;
-
+    
     # Force rescan if configured
     return 1 if $config->{ForceFaceRescan};
-      
+    
     # If no info file exists, we need to process
     if (-e $InfoFileName) {
       &log("   info file exists, checking timestamps\n", "debug");
     } else {
       &log("   info file does not exist, needs face recognition\n", "debug");
       return 1 unless -e $InfoFileName;
-    }
-
+    }    
     
     # Get timestamps
     my $photo_mtime = stat($InputPicFileFullName)->mtime;
@@ -802,10 +802,10 @@ sub NeedsFaceRecognition {
     if (!$last_face_scan || 
         $photo_mtime > $last_face_scan || 
         $model_mtime > $last_model_time) {
-        &log("   times indicate need face recognition\n", "debug");
+        &log("   times indicate face recognition needed\n", "debug");
         return 1;
     }
-    
+
     &log("   times indicate no need for face recognition\n", "debug");
     return 0;
 }
@@ -842,6 +842,7 @@ sub ReadFaceRecognitionInfo {
     }
     close($fh);
     &log("last face scan: $last_face_scan\nlast model time: $last_model_time\n","debug");
+    
     return ($last_face_scan, $last_model_time);
 }
 
@@ -902,19 +903,30 @@ sub ProcessFaceRecognition {
     my $InfoFileName = $_[4];          # Full path to .info file
 
     &log ("+","progress");
-
     return unless $FaceRecognitionEnabled;
 
     # Check if we need to process this photo
     unless (&NeedsFaceRecognition($InputPicFileFullName, $InfoFileName)) {
-        &log("Skipping face recognition for $picname (cached)\n", "verbose");
+        &log("Skipping face recognition for $picname (cached)\n", "debug");
         return;
     }
 
     &log("Processing face recognition for $InputPicFileFullName\n", "verbose");
 
+    # Build the recognition command
+    my $recognize_cmd = "python face_recognizer.py recognize \"$InputPicFileFullName\"";
+    
+    # Add unknown face saving options if enabled
+    if ($config->{SaveUnknownFaces}) {
+        $recognize_cmd .= " --save-unknown";
+        if ($config->{UnknownFacesDir}) {
+            $recognize_cmd .= " --unknown-dir \"$config->{UnknownFacesDir}\"";
+        }
+    }
+    
+    $recognize_cmd .= " 2>nul";
+    
     # Run face recognition on the image
-    my $recognize_cmd = "python face_recognizer.py recognize \"$InputPicFileFullName\" 2>nul";
     my $result_json = `$recognize_cmd`;
     &log("result_json is\n$result_json", "debug");
 
@@ -1012,7 +1024,6 @@ sub UpdateCaptionFileWithFaces {
         print $fh "$existing_caption_content\n";
     } else {
         # Generate a default caption based on faces found
-        print $fh "Automatically recognized ";
         if (@recognized_faces == 1) {
             print $fh "$recognized_faces[0]\n";
         } elsif (@recognized_faces > 1) {
@@ -1024,15 +1035,14 @@ sub UpdateCaptionFileWithFaces {
     if ($existing_comment_content) {
         print $fh "$existing_comment_content\n";
     } else {
-        print $fh "Faces automatically detected\n";
+        print $fh "Automatically recognized ";
     }
 
     close($fh);
 
     my $action = $has_existing_file ? "Updated" : "Created";
-    &log("$action caption file for $picname with faces: $names_line\n", "info");
+    &log("$action caption file for $picname with faces: $names_line\n", "verbose");
 }
-
 #-----------------------------------------------------------------------------
 # Make thumbnails, html files, and and index html file for a certain
 # Output Directory, using all the photos in all its input directories.
