@@ -851,7 +851,7 @@ sub ReadFaceRecognitionInfo {
 sub UpdateFaceRecognitionInfo {
     my $InfoFileName = $_[0];
     my $current_time = time;
-    my $model_time = (stat("face_encodings.pkl"))[9];
+    my $model_time = stat("face_encodings.pkl")->mtime;
     
     # Read existing info file content, filtering out old face recognition data
     my $existing_content = "";
