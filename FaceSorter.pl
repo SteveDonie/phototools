@@ -228,6 +228,7 @@ sub find_duplicates {
                 print "  $file\n";
             }
             
+            # Keep first file, delete the rest
             for my $i (1..$#files) {
                 my $file_to_delete = "$unknown_dir/$files[$i]";
                 if (unlink($file_to_delete)) {
@@ -292,48 +293,60 @@ sub group_similar_faces {
         return;
     }
     
-    # Parse results
+    # Parse results and automatically create Person directories
     eval {
         my $groups = decode_json($result);
         
-        print "\nFound " . scalar(@$groups) . " groups of similar faces:\n\n";
+        print "\nFound " . scalar(@$groups) . " groups of similar faces.\n";
+        print "Creating Person directories and moving faces...\n\n";
         
         my $group_num = 1;
+        my $total_moved = 0;
+        
         foreach my $group (@$groups) {
             next if scalar(@$group) < 2;  # Skip groups with only one face
             
-            print "Group $group_num (" . scalar(@$group) . " similar faces):\n";
+            my $person_name = sprintf("Person%02d", $group_num);
+            my $person_dir = "$training_dir/$person_name";
+            
+            # Create directory if it doesn't exist
+            if (!-d $person_dir) {
+                make_path($person_dir) or do {
+                    print "Error creating directory $person_dir: $!\n";
+                    next;
+                };
+            }
+            
+            print "Group $group_num -> $person_name (" . scalar(@$group) . " faces):\n";
+            
+            my $moved_count = 0;
             foreach my $face (@$group) {
-                print "  $face\n";
-            }
-            
-            # Ask if user wants to create a directory for this group
-            print "Create directory for this group? Enter person name (or press Enter to skip): ";
-            my $person_name = <STDIN>;
-            chomp($person_name);
-            
-            if ($person_name && $person_name ne '') {
-                my $person_dir = "$training_dir/$person_name";
-                if (!-d $person_dir) {
-                    make_path($person_dir) or print "Error creating directory: $!\n";
-                }
+                my $src = "$unknown_dir/$face";
+                my $dst = "$person_dir/$face";
                 
-                if (-d $person_dir) {
-                    foreach my $face (@$group) {
-                        my $src = "$unknown_dir/$face";
-                        my $dst = "$person_dir/$face";
-                        if (move($src, $dst)) {
-                            print "  Moved: $face -> $person_name/\n";
-                        } else {
-                            print "  Error moving: $face\n";
-                        }
+                if (-f $src) {
+                    if (move($src, $dst)) {
+                        print "  $face\n";
+                        $moved_count++;
+                        $total_moved++;
+                    } else {
+                        print "  Error moving $face: $!\n";
                     }
+                } else {
+                    print "  Warning: $face not found\n";
                 }
             }
             
-            print "\n";
+            print "  -> Moved $moved_count faces to $person_name/\n\n";
             $group_num++;
         }
+        
+        print "Summary:\n";
+        print "- Created " . ($group_num - 1) . " Person directories\n";
+        print "- Moved $total_moved faces total\n";
+        print "- Use the web interface to identify and rename the Person directories\n";
+        print "- Run 'perl TrainFaces.pl train' after identifying people\n";
+        
     };
     
     if ($@) {
