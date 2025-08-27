@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Photo Album</title>
+    <script src="https://sdk.userbase.com/2/userbase.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .login-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            max-width: 300px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+        
+        .btn-success:hover {
+            box-shadow: 0 8px 25px rgba(81, 207, 102, 0.3);
+        }
+        
+        .admin-panel {
+            display: none;
+        }
+        
+        .users-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .table-header h2 {
+            color: #333;
+            font-size: 1.8rem;
+            font-weight: 300;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .user-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-info {
+            margin-bottom: 15px;
+        }
+        
+        .user-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-email {
+            font-size: 1.0rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .user-id {
+            font-size: 0.9rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .user-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .status-authorized {
+            background: rgba(81, 207, 102, 0.2);
+            color: #2b8a3e;
+        }
+        
+        .status-unauthorized {
+            background: rgba(255, 107, 107, 0.2);
+            color: #c92a2a;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #c92a2a;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .success {
+            background: rgba(81, 207, 102, 0.1);
+            color: #2b8a3e;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #51cf66;
+        }
+        
+        @media (max-width: 768px) {
+            .stats {
+                flex-direction: column;
+            }
+            
+            .users-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .user-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Admin Panel</h1>
+            <p>Manage user access and permissions for your photo album</p>
+        </div>
+        
+        <div id="loginSection" class="login-section">
+            <h2>Admin Login</h2>
+            <p>Please sign in with your admin credentials</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn">Sign In</button>
+            </form>
+            
+            <div id="loginError" style="display: none;"></div>
+        </div>
+        
+        <div id="adminPanel" class="admin-panel">
+            <div class="users-table">
+                <div class="table-header">
+                    <h2>User Management</h2>
+                    <button id="logoutBtn" class="btn btn-danger">Logout</button>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalUsers">0</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="authorizedUsers">0</div>
+                        <div class="stat-label">Authorized</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="unauthorizedUsers">0</div>
+                        <div class="stat-label">Unauthorized</div>
+                    </div>
+                </div>
+                
+                <button id="refreshBtn" class="btn">Refresh Users</button>
+                
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading users...</p>
+                </div>
+                
+                <div id="usersList" class="users-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAdmin = null;
+        let allUsers = [];
+
+        // DOM elements
+        const loginSection = document.getElementById('loginSection');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const usersList = document.getElementById('usersList');
+        const loading = document.getElementById('loading');
+        const totalUsersEl = document.getElementById('totalUsers');
+        const authorizedUsersEl = document.getElementById('authorizedUsers');
+        const unauthorizedUsersEl = document.getElementById('unauthorizedUsers');
+
+        // Check if already signed in
+        userbase.init({ appId: 'b6a8348d-da63-495e-9600-e4f3368cc3f3' }).then((session) => {
+            if (session.user) {
+                showAdminPanel(session.user);
+            }
+        }).catch(console.error);
+
+        // Login form handler
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const user = await userbase.signIn({ username, password });
+                
+                // Here you should check if this user is actually an admin
+                // You could store this in the user profile or check against a hardcoded list
+                if (isAdmin(user)) {
+                    showAdminPanel(user);
+                } else {
+                    showError('Access denied. Admin privileges required.');
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // Logout handler
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await userbase.signOut();
+                showLoginSection();
+            } catch (error) {
+                showError('Error signing out: ' + error.message);
+            }
+        });
+
+        // Refresh users handler
+        refreshBtn.addEventListener('click', loadUsers);
+
+        // Check if user is admin (you'll need to customize this logic)
+        function isAdmin(user) {
+            // Option 1: Check against hardcoded admin usernames
+            const adminUsernames = ['stevedonie']; // add others if needed
+            return adminUsernames.includes(user.username);
+            
+            // Option 2: Check a profile field (if you store admin status in user profile)
+            // return user.profile && user.profile.isAdmin === true;
+        }
+
+        // Show admin panel
+        function showAdminPanel(user) {
+            currentAdmin = user;
+            loginSection.style.display = 'none';
+            adminPanel.style.display = 'block';
+            loadUsers();
+        }
+
+        // Show login section
+        function showLoginSection() {
+            currentAdmin = null;
+            loginSection.style.display = 'block';
+            adminPanel.style.display = 'none';
+            clearError();
+        }
+
+        // Load all users (this is a simplified version - you'll need to implement user listing)
+        async function loadUsers() {
+            loading.style.display = 'block';
+            usersList.innerHTML = '';
+            
+            try {
+                // Note: Userbase doesn't have a built-in admin API to list all users
+                // You'll need to implement this by having users store their info in a shared database
+                // or use Userbase's admin APIs if available in your plan
+                
+                // For now, this is a placeholder implementation
+                // You might need to store user registrations in a database that admins can access
+                allUsers = await getUsersFromDatabase(); // You'll need to implement this
+                
+                updateStats();
+                displayUsers();
+            } catch (error) {
+                showError('Error loading users: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function getUsersFromDatabase() {
+          let userbaseURL = 'https://v1.userbase.com/v1/admin/apps/b6a8348d-da63-495e-9600-e4f3368cc3f3/users'
+          try {
+            const response = await fetch(userbaseURL, { 
+                  method: 'GET',
+                  headers: {
+                    'Authorization': 'Bearer lf62dDVoQat0Bpct+7u8WkJch02afs2/QMrWsK49n0s=	'
+                  }
+              });
+              if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+              }
+              const responseObject = await response.json();
+              console.log('responseObject: ' + responseObject);
+              return responseObject.users;
+          } catch (error) {
+            console.error('Error listing users:', error);
+          }
+        }
+
+        // Update user authorization status
+        async function updateUserAuth(userId, isAuthorized) {
+            try {
+                // Update the user's authorization status in your database
+                await userbase.updateItem({
+                    databaseName: 'user-profiles',
+                    itemId: userId,
+                    item: { 
+                        userId: userId,
+                        isAuthorized: isAuthorized,
+                        lastUpdated: new Date().toISOString(),
+                        updatedBy: currentAdmin.username
+                    }
+                });
+                
+                // Refresh the users list
+                await loadUsers();
+                showSuccess(`User ${isAuthorized ? 'authorized' : 'unauthorized'} successfully!`);
+            } catch (error) {
+                showError('Error updating user: ' + error.message);
+            }
+        }
+
+        // Display users in the grid
+        function displayUsers() {
+            usersList.innerHTML = '';
+            
+            allUsers.forEach(userData => {
+                const userCard = createUserCard(userData);
+                usersList.appendChild(userCard);
+            });
+        }
+
+        // Create user card element
+        function createUserCard(userData) {
+            const userName = userData.username;
+            const isAuthorized = userData.item?.isAuthorized || false;
+            const userId = userData.userId;
+            const userEmail = userData.email;
+            
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            
+            card.innerHTML = `
+                <div class="user-info">
+                    <div class="user-name">${userName}</div>
+                    <div class="user-email">${userEmail}</div>
+                    <div class="user-id">ID: ${userId}</div>
+                </div>
+                <div class="user-status ${isAuthorized ? 'status-authorized' : 'status-unauthorized'}">
+                    ${isAuthorized ? 'Authorized' : 'Unauthorized'}
+                </div>
+                <div class="user-actions">
+                    <button class="btn ${isAuthorized ? 'btn-danger' : 'btn-success'}" 
+                            onclick="updateUserAuth('${userId}', ${!isAuthorized})">
+                        ${isAuthorized ? 'Revoke Access' : 'Grant Access'}
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = allUsers.length;
+            const authorized = allUsers.filter(u => u.item?.isAuthorized).length;
+            const unauthorized = total - authorized;
+            
+            totalUsersEl.textContent = total;
+            authorizedUsersEl.textContent = authorized;
+            unauthorizedUsersEl.textContent = unauthorized;
+        }
+
+        // Utility functions
+        function showError(message) {
+            loginError.innerHTML = `<div class="error">${message}</div>`;
+            loginError.style.display = 'block';
+        }
+
+        function clearError() {
+            loginError.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            
+            // Insert after the refresh button
+            refreshBtn.parentNode.insertBefore(successDiv, refreshBtn.nextSibling);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

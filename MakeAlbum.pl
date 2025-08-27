@@ -505,9 +505,9 @@ sub make_dirs()
 			if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
 				$oneYearPrevDir = "";
 			}
-		}
+	  }
 
-		if (! -e $config->{AlbumDir}."/".$outputDir) {
+    if (! -e $config->{AlbumDir}."/".$outputDir) {
 		  &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
 		  mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
 		}
@@ -2496,6 +2496,7 @@ XML
       &copyifnewer ("basic.css",$config->{AlbumDir});
       &copyifnewer ("TwoColumn.css",$config->{AlbumDir});
       &copyifnewer ("usermanagement.js",$config->{AlbumDir});
+      &copyifnewer ("userAdmin.html",$config->{AlbumDir});
     }
   } # was able to open latestpics file
   else

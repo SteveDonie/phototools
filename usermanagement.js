@@ -28,7 +28,7 @@ function handleSignUp(e) {
   const email = document.getElementById('signup-email').value
 
   userbase.signUp({ username, password, email, rememberMe: 'local' })
-    .then((user) => showUserLoggedIn(user.username))
+    .then((user) => showUserLoggedIn(user))
     .catch((e) => document.getElementById('signup-error').innerHTML = e)
 }
 
@@ -39,17 +39,21 @@ function handleLogin(e) {
   const password = document.getElementById('login-password').value
 
   userbase.signIn({ username, password, rememberMe: 'local' })
-    .then((user) => showUserLoggedIn(user.username))
+    .then((user) => showUserLoggedIn(user))
     .catch((e) => document.getElementById('login-error').innerHTML = e)
 }
 
-function showUserLoggedIn(username) {
-  var msg = 'showUserLoggedIn(' + username + ')'
+function showUserLoggedIn(user) {
+  var msg = 'showUserLoggedIn(' + user.username + ')'
   console.log(msg)
   document.getElementById('auth-view').style.display = 'none'
   document.getElementById('album-content').style.display = 'block';
   document.getElementById('LoggedInUser').style.display = 'block';
-  document.getElementById('LoggedInUser').innerHTML = "logged in as <a href=\"#\" title=\"click to log out\">" + username + "</a>";
+  var userLoginInfo = "logged in as <a href=\"#\" title=\"click to log out\">" + user.username + "</a>";
+  if (user.username == 'stevedonie') {
+    userLoginInfo = `${userLoginInfo} <a href=\"userAdmin.html\">User Admin</a>`;
+  }
+  document.getElementById('LoggedInUser').innerHTML = userLoginInfo;
 }
 
 function handleLogout() {
