@@ -120,13 +120,13 @@ my $FinalOutputDirCount = @FinalOutputDirs;
 
 # another check of SkipDirs to make iteration on front page changes faster
 if (! $config->{SkipMakeDirs}) {
-	&log ("\nChecking size of $config->{AlbumDir}\n\n","progress");
-	$AlbumSize=&calc_size($config->{AlbumDir});
-	$SizeMessage = "$config->{PhotosPageLink} has $TotalPictures pictures in $FinalOutputDirCount pages. (".&report_size ($AlbumSize). ")";
+  &log ("\nChecking size of $config->{AlbumDir}\n\n","progress");
+  $AlbumSize=&calc_size($config->{AlbumDir});
+  $SizeMessage = "$config->{PhotosPageLink} has $TotalPictures pictures in $FinalOutputDirCount pages. (".&report_size ($AlbumSize). ")";
 } else {
-	$AlbumSize=100000;  # made up number
-	$SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
-}	
+  $AlbumSize=100000;  # made up number
+  $SizeMessage = "$config->{PhotosPageLink} is ".&report_size ($AlbumSize). " ($TotalPictures pictures)";
+}  
 &make_frontpage ($SizeMessage); 
 &make_tagspages ();
 &log ("$SizeMessage\n","info");
@@ -197,7 +197,7 @@ sub get_config ()
     $config->{ConfigName} = $WhichAlbum;
 
     if (exists $config->{Debug} and $config->{Debug} == 1) {
-    	$Debug = 1;
+      $Debug = 1;
     }
 
   }
@@ -485,38 +485,38 @@ sub make_dirs()
   # DEBUGING MAKE FRONT PAGE - skip all the inner pages
   if (! $config->{SkipMakeDirs}) {
   # Now use FinalOutputDirs to make album pages.
-	  for (my $index = 0; $index < @FinalOutputDirs; $index++) {
-		my $outputDir = $FinalOutputDirs[$index];
+    for (my $index = 0; $index < @FinalOutputDirs; $index++) {
+    my $outputDir = $FinalOutputDirs[$index];
 
-		my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
-		my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
-		my $oneYearForwardDir = "";
-		my $oneYearPrevDir = "";
+    my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
+    my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
+    my $oneYearForwardDir = "";
+    my $oneYearPrevDir = "";
 
-		# I would like the prev year and next year to only be for directories (source and target) that are month-like,
-		# and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
-		if (DirIsMonthLike($outputDir)) {
-			my $FinalOutputDirCount = @FinalOutputDirs;
-			$oneYearForwardDir = GetSameMonthNextYear($outputDir);
-			$oneYearPrevDir = GetSameMonthPrevYear($outputDir);
-			if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
-				$oneYearForwardDir = "";
-			}
-			if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
-				$oneYearPrevDir = "";
-			}
-	  }
+    # I would like the prev year and next year to only be for directories (source and target) that are month-like,
+    # and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
+    if (DirIsMonthLike($outputDir)) {
+      my $FinalOutputDirCount = @FinalOutputDirs;
+      $oneYearForwardDir = GetSameMonthNextYear($outputDir);
+      $oneYearPrevDir = GetSameMonthPrevYear($outputDir);
+      if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
+        $oneYearForwardDir = "";
+      }
+      if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
+        $oneYearPrevDir = "";
+      }
+    }
 
     if (! -e $config->{AlbumDir}."/".$outputDir) {
-		  &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
-		  mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
-		}
+      &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
+      mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
+    }
 
-		&log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
-		&MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
-	  }
+    &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
+    &MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
+    }
   } else {
-	  &log ("\nSkipping making directory pages because SkipMakeDirs is true\n\n","info");
+    &log ("\nSkipping making directory pages because SkipMakeDirs is true\n\n","info");
   }
   
   # if there is no LatestPics.configname.txt, then it must be because there were no new photos
@@ -534,31 +534,31 @@ sub make_dirs()
 # return true, otherwise return false.
 sub DirIsMonthLike ()
 {
-	my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
-	my $retval = $DirToCheck =~ /^\d\d\d\d-\d\d$/;	
-	return $retval;
+  my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
+  my $retval = $DirToCheck =~ /^\d\d\d\d-\d\d$/;  
+  return $retval;
 }
 
 # Given a directory, get the directory that represents the same month next year
 sub GetSameMonthNextYear ()
 {
-	my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
-	my $matches = $DirToCheck =~ /^(\d\d\d\d)-(\d\d$)/;
-	my $currentYear = $1;
-	my $currentMonth = $2;
-	my $nextYear = $currentYear + 1;
-	return $nextYear."-".$currentMonth;
+  my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
+  my $matches = $DirToCheck =~ /^(\d\d\d\d)-(\d\d$)/;
+  my $currentYear = $1;
+  my $currentMonth = $2;
+  my $nextYear = $currentYear + 1;
+  return $nextYear."-".$currentMonth;
 }
 
 # Given a directory, get the directory that represents the same month previous year
 sub GetSameMonthPrevYear ()
 {
-	my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
-	my $matches = $DirToCheck =~ /^(\d\d\d\d)-(\d\d$)/;
-	my $currentYear = $1;
-	my $currentMonth = $2;
-	my $prevYear = $currentYear - 1;
-	return $prevYear."-".$currentMonth;
+  my $DirToCheck = $_[0];  # will have unix valid dir name (just the last part of a path).
+  my $matches = $DirToCheck =~ /^(\d\d\d\d)-(\d\d$)/;
+  my $currentYear = $1;
+  my $currentMonth = $2;
+  my $prevYear = $currentYear - 1;
+  return $prevYear."-".$currentMonth;
 }
 
 # Patch for MakeAlbum.pl - created by claude.ai, simplifying some things.
@@ -1194,7 +1194,7 @@ sub MakePage ()
     closedir DIR;
 
     foreach my $file (@unsortedfiles) {
-    		$file = $inputDir."/".$file;
+        $file = $inputDir."/".$file;
     }
 
     @filenames = (@filenames, @unsortedfiles);
@@ -1696,9 +1696,9 @@ HTML
       {
         if (&copyifnewer ($InputPicFileFullNames[$index],$NewFullDir,$NewFileNames[$index]."_lg.jpg")) {
           &log ("*","progress");
-		}
+    }
       }
-      	&log ("\n","progress");
+        &log ("\n","progress");
     }
   }
 
@@ -1843,12 +1843,12 @@ $HTML = <<HTML;
     <div id="block_2">
          <div class="leftalign">
             $previousCell
-			&nbsp;
+      &nbsp;
             $oneYearPreviousCell
           </div>
           <div class="rightalign">
             $oneYearForwardCell
-			&nbsp;
+      &nbsp;
             $nextCell
           </div>
           <div class="spacer"/>
@@ -1953,7 +1953,7 @@ HTML
           print (OUTSLIDEFILE "$_\n");
         }
       }
-	}
+  }
     close (SLIDEFILE);
     close (OUTSLIDEFILE);
   }
@@ -2526,11 +2526,11 @@ sub AddTags ()
     # remove stopwords
     for (@tags)
     {
-    	# this is not complete, but it reasonable for my needs - remove html tags
-    	s/<(?:[^>'"]*|(['"]).*?\1)*>//gs;
-    	# next remove non-alphanumeric
+      # this is not complete, but it reasonable for my needs - remove html tags
+      s/<(?:[^>'"]*|(['"]).*?\1)*>//gs;
+      # next remove non-alphanumeric
       # Want to keep the @ symbol for tags added by face recognition
-    	tr/a-zA-Z0-9@//cd;
+      tr/a-zA-Z0-9@//cd;
     }
     &log ("adding tags (@tags) for picture $name\n",$loglevel);
     foreach my $tag (@tags)
@@ -2865,7 +2865,7 @@ HTML
   {
      &makeTagPage($tag);
   }
-  &log ("\n","progress");	
+  &log ("\n","progress");  
 }
 
 #-----------------------------------------------------------------------------
@@ -2883,7 +2883,7 @@ sub OptimizeNumberOfTags ()
   for $tag (keys %tagshash)
   {
     if (length $tag < 1) {
-    	delete $tagshash{$tag};
+      delete $tagshash{$tag};
     }
   }
 
@@ -2894,11 +2894,11 @@ sub OptimizeNumberOfTags ()
     {
       $numValues = @{ $tagshash{$tag}};
       if ($numValues < $minimumValuesToShow) {
-      	&log ("   deleting tag '$tag' because it has fewer than $minimumValuesToShow usages\n","debug");
-      	delete $tagshash{$tag};
+        &log ("   deleting tag '$tag' because it has fewer than $minimumValuesToShow usages\n","debug");
+        delete $tagshash{$tag};
       }
       if (length $tag < 1) {
-      	delete $tagshash{$tag};
+        delete $tagshash{$tag};
       }
     }
     $minimumValuesToShow++;
@@ -3233,26 +3233,26 @@ sub report_size ()
     my $GBSize = $AlbumSize / 1073741824;
    $message = sprintf "%.1f GBytes",$GBSize;
   }
-  else {	  
-	  if ($AlbumSize > 1048576)
-	  {
-	   my $MBSize = $AlbumSize / 1048576;
-	   $message = sprintf "%.1f MBytes",$MBSize;
-	  }
-	  else
-	  {
-		if ($AlbumSize > 1024)
-		{
-		 my $KBSize = $AlbumSize / 1024;
-		 $message = sprintf "%.0f KBytes",$KBSize;
-		}
-		else
-		{
-		 $message = "$AlbumSize Bytes";
-		}
-	  }
+  else {    
+    if ($AlbumSize > 1048576)
+    {
+     my $MBSize = $AlbumSize / 1048576;
+     $message = sprintf "%.1f MBytes",$MBSize;
+    }
+    else
+    {
+    if ($AlbumSize > 1024)
+    {
+     my $KBSize = $AlbumSize / 1024;
+     $message = sprintf "%.0f KBytes",$KBSize;
+    }
+    else
+    {
+     $message = "$AlbumSize Bytes";
+    }
+    }
   }
-	  return $message;
+    return $message;
 }
 
 #-----------------------------------------------------------------------------
@@ -3293,13 +3293,13 @@ sub copyifnewer ()
     {
       unlink $DestFile;
       copy $filename, $DestFile or die "Couldn't copy $filename to $DestFile: $!";
-	  $wasCopied = 1;
+    $wasCopied = 1;
     }
   }
   else
   {
     copy $filename, $DestFile or die "Couldn't copy $filename to $DestFile: $!";
-	$wasCopied = 1;
+  $wasCopied = 1;
   }
   return $wasCopied;
 }
