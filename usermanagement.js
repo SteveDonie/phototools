@@ -86,7 +86,7 @@ function resetAuthFields() {
 }
 
 function initListeners(session) {
-  console.log('initListeners')
+  console.log(`initListeners called, session is $session`)
   document.getElementById('signup-form').addEventListener('submit', handleSignUp)
   document.getElementById('login-form').addEventListener('submit', handleLogin)
   
@@ -102,11 +102,11 @@ function initListeners(session) {
   if (albumContent) {
     if (session) {
       if (session.user) {
-        console.log ('initListeners showing album-content')
+        console.log ('session.user is true, initListeners showing album-content')
         albumContent.style.display = 'block'
       } 
     } else {
-      console.log ('initListeners hiding album-content')
+      console.log ('session.user is false, initListeners hiding album-content')
       albumContent.style.display = 'none'
     }
   } else {
