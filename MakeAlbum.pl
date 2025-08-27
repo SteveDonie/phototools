@@ -457,8 +457,8 @@ sub make_dirs()
   %count = ();
   foreach $element (@AlbumDirs, @FinalOutputDirs) { $count{$element}++ }
   foreach $element (keys %count) {
-      push @union, $element;
-      push @{ $count{$element} > 1 ? \@intersection : \@difference }, $element;
+    push @union, $element;
+    push @{ $count{$element} > 1 ? \@intersection : \@difference }, $element;
   }
 
   if (@difference > 0)
@@ -486,34 +486,35 @@ sub make_dirs()
   if (! $config->{SkipMakeDirs}) {
   # Now use FinalOutputDirs to make album pages.
     for (my $index = 0; $index < @FinalOutputDirs; $index++) {
-    my $outputDir = $FinalOutputDirs[$index];
+      my $outputDir = $FinalOutputDirs[$index];
 
-    my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
-    my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
-    my $oneYearForwardDir = "";
-    my $oneYearPrevDir = "";
+      my $nextDir = $index == 0 ? "" : $FinalOutputDirs[$index-1];
+      my $prevDir = $index == @FinalOutputDirs-1 ? "" : $FinalOutputDirs[$index+1];
+      my $oneYearForwardDir = "";
+      my $oneYearPrevDir = "";
 
-    # I would like the prev year and next year to only be for directories (source and target) that are month-like,
-    # and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
-    if (DirIsMonthLike($outputDir)) {
-      my $FinalOutputDirCount = @FinalOutputDirs;
-      $oneYearForwardDir = GetSameMonthNextYear($outputDir);
-      $oneYearPrevDir = GetSameMonthPrevYear($outputDir);
-      if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
-        $oneYearForwardDir = "";
+      # I would like the prev year and next year to only be for directories (source and target) that are month-like,
+      # and they should only count 'month-like' directories when counting. Just 12 ahead/behind is not great.
+      if (DirIsMonthLike($outputDir)) {
+        my $FinalOutputDirCount = @FinalOutputDirs;
+        $oneYearForwardDir = GetSameMonthNextYear($outputDir);
+        $oneYearPrevDir = GetSameMonthPrevYear($outputDir);
+        if (! (grep(/^$oneYearForwardDir$/,@FinalOutputDirs))) {
+          $oneYearForwardDir = "";
+        }
+        if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
+          $oneYearPrevDir = "";
+        }
       }
-      if (! (grep(/^$oneYearPrevDir$/,@FinalOutputDirs))) {
-        $oneYearPrevDir = "";
+
+      if (! -e $config->{AlbumDir}."/".$outputDir) {
+        &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
+        mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
       }
-    }
 
-    if (! -e $config->{AlbumDir}."/".$outputDir) {
-      &log ("making album directory $config->{AlbumDir}/$outputDir from pictures in @\n","verbose");
-      mkdir $config->{AlbumDir}."/".$outputDir,0777 or die "can't make directory '$config->{AlbumDir}/$outputDir' $!";
-    }
-
-    &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
-    &MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
+      &log ("making page '$outputDir'. PrevDir is '$prevDir', NextDir is '$nextDir' PrevYear is '$oneYearPrevDir' NextYear is '$oneYearForwardDir'\n","verbose");
+      &MakePage ($outputDir,$prevDir,$nextDir,$oneYearPrevDir,$oneYearForwardDir);
+      &make_tagspages();
     }
   } else {
     &log ("\nSkipping making directory pages because SkipMakeDirs is true\n\n","info");
