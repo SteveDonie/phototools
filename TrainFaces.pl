@@ -5,18 +5,12 @@
 # Face Recognition Training Script for Photo Album Generator
 # Sets up training directories and trains the face recognition model
 #
-# The directories/names of faces to be recognized are in this script.
+# This version automatically discovers any directories starting with '@' in the faces directory
 #
-# There are two usages for this script. The first sets up the directory
-# structure.
+# Usage: perl TrainFaces.pl [config_name]        # Setup and show status
+# Usage: perl TrainFaces.pl [config_name] train  # Actually train the model
 #
-# Usage: perl TrainFaces.pl [config_name]
-#
-# After running it this way, use the second usage to train the database
-# on those faces.
-# 
-# Usage: perl TrainFaces.pl [config name] train 
-#
+
 use strict;
 use warnings;
 use File::Path qw(make_path);
@@ -32,9 +26,8 @@ use lib '.';
 my $config;
 my $WhichAlbum = "default";
 
-if ($ARGV[0]) {
+if ($ARGV[0] && $ARGV[0] ne 'train') {
     if (-e "AlbumSettings.".$ARGV[0].".txt") {
-        print "Configuration file AlbumSettings.".$WhichAlbum.".txt found\n";
         $WhichAlbum = $ARGV[0];
     } else {
         die "Configuration file AlbumSettings.".$ARGV[0].".txt not found.\n";
@@ -42,6 +35,7 @@ if ($ARGV[0]) {
 }
 
 if (-e "AlbumSettings.".$WhichAlbum.".txt") {
+    print "Configuration file AlbumSettings.".$WhichAlbum.".txt found\n";
     $config = require "AlbumSettings.".$WhichAlbum.".txt";
     $config->{ConfigName} = $WhichAlbum;
 } else {
@@ -53,87 +47,90 @@ $config->{FaceTrainingDir} //= 'faces';
 $config->{FaceConfidenceThreshold} //= 0.6;
 $config->{EnableFaceRecognition} //= 1;
 
-print "Face Recognition Training Setup\n";
-print "================================\n\n";
+print "Face Recognition Training - Auto-discovery Mode\n";
+print "===============================================\n\n";
 
 if (!$config->{EnableFaceRecognition}) {
     die "Face recognition is disabled in configuration. Set EnableFaceRecognition => 1\n";
 }
 
 my $training_dir = $config->{FaceTrainingDir};
-my @family_members = (
-    "\@JulieDonie",
-    "\@JordanDonie", 
-    "\@LeeDonie",
-    "\@ScottDonie",
-    "\@RolDonie",
-    "\@JudyDonie",
-    "\@MikeDonie",
-    "\@SteveDonie",
-    "\@KatieRaver",
-    "\@BryanSloane"
-);
 
-print "Setting up training directories in '$training_dir'...\n";
+print "Will train on any directories in '$training_dir' that start with '\@'\n\n";
 
 # Create main training directory
 if (!-d $training_dir) {
     make_path($training_dir) or die "Cannot create training directory '$training_dir': $!\n";
+    print "Created training directory: $training_dir\n";
 }
 
-# Create subdirectories for each family member
-foreach my $person (@family_members) {
+# Discover directories that start with @
+print "Scanning for people directories (starting with '\@')...\n";
+opendir(my $dh, $training_dir) || die "Cannot open training directory '$training_dir': $!\n";
+my @people_dirs = grep { 
+    -d "$training_dir/$_" && 
+    $_ ne '.' && 
+    $_ ne '..' && 
+    $_ ne 'Unknown' &&
+    substr($_, 0, 1) eq '@'  # Only directories starting with @
+} readdir($dh);
+closedir($dh);
+
+if (@people_dirs == 0) {
+    print "No people directories found (directories starting with '\@').\n";
+    print "Create directories like:\n";
+    print "  faces/\@JulieDonie/\n";
+    print "  faces/\@JordanDonie/\n";
+    print "  faces/\@ScottDonie/\n";
+    print "And add 3-10 training photos to each directory.\n\n";
+    print "Then run: perl TrainFaces.pl [config_name] train\n";
+    exit 0;
+}
+
+print "Found " . @people_dirs . " people directories:\n";
+foreach my $person (@people_dirs) {
     my $person_dir = "$training_dir/$person";
-    if (!-d $person_dir) {
-        make_path($person_dir) or die "Cannot create person directory '$person_dir': $!\n";
-        print "  Created directory for $person\n";
-        
-        # Create a README file in each directory
-        open(my $fh, '>', "$person_dir/README.txt") or die "Cannot create README: $!\n";
-        print $fh "Training photos for $person\n";
-        print $fh "=" x (length($person) + 20) . "\n\n";
-        print $fh "Add 3-10 clear photos of $person to this directory.\n";
-        print $fh "Photos should:\n";
-        print $fh "- Show the person's face clearly\n";
-        print $fh "- Be well-lit\n";
-        print $fh "- Have the person looking roughly toward the camera\n";
-        print $fh "- Preferably have only one person in the photo\n";
-        print $fh "- Be in JPG, PNG, or other common image formats\n\n";
-        print $fh "After adding photos, run: perl TrainFaces.pl train\n";
-        close($fh);
-    } else {
-        print "  Directory for $person already exists\n";
-    }
+    my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
+    my $count = scalar(@files);
+    print "  $person: $count training photos\n";
 }
 
 print "\nTraining directory setup complete!\n\n";
 
-# Check if this is a training run - ARGV[-1] means the last element in the array
-if (@ARGV > 0 && $ARGV[-1] eq 'train') {
+# Check if this is a training run - look for 'train' as the last argument
+my $is_training = (@ARGV > 0 && $ARGV[-1] eq 'train');
+
+if ($is_training) {
     print "Starting face recognition training...\n";
-    train_model();
+    train_model(@people_dirs);
 } else {
     print "Next steps:\n";
     print "1. Add 3-10 clear photos of each person to their respective directories in '$training_dir'/\n";
-    print "2. Run: perl TrainFaces.pl train\n";
+    print "2. Run: perl TrainFaces.pl";
+    print " $WhichAlbum" if $WhichAlbum ne 'default';
+    print " train\n";
     print "3. Test recognition: python face_recognizer.py recognize path/to/test/photo.jpg\n";
     print "4. Run MakeAlbum.pl normally - face recognition will be automatic!\n\n";
     
-    print "Training directories created:\n";
-    foreach my $person (@family_members) {
-        my $person_dir = "$training_dir/$person";
-        my @files = glob("$person_dir/*.{jpg,jpeg,png,bmp}");
-        my $count = scalar(@files);
-        print "  $person: $count training photos\n";
+    if (@people_dirs > 0) {
+        print "Current training directories:\n";
+        foreach my $person (@people_dirs) {
+            my $person_dir = "$training_dir/$person";
+            my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
+            my $count = scalar(@files);
+            print "  $person: $count training photos in $person_dir\n";
+        }
     }
 }
 
 sub train_model {
+    my @people_to_train = @_;
+    
     print "\nChecking Python dependencies...\n";
     
     # Check if required Python packages are installed
     my $check_cmd = 'python -c "import face_recognition, cv2, numpy, pickle; print(\'Dependencies OK\')"';
-    my $result = `$check_cmd 2>PythonCheck.txt`;
+    my $result = `$check_cmd 2>nul`;
     
     if ($? != 0) {
         print "Error: Required Python packages not found.\n";
@@ -148,9 +145,9 @@ sub train_model {
     
     # Check that we have training photos
     my $total_photos = 0;
-    foreach my $person (@family_members) {
+    foreach my $person (@people_to_train) {
         my $person_dir = "$training_dir/$person";
-        my @files = glob("$person_dir/*.{jpg,jpeg,png,bmp}");
+        my @files = bsd_glob("$person_dir/*.{jpg,jpeg,png,bmp}");
         my $count = scalar(@files);
         $total_photos += $count;
         if ($count == 0) {
@@ -168,9 +165,13 @@ sub train_model {
     
     print "\nStarting face recognition training with $total_photos total photos...\n";
     
-    # Run the Python training
+    # Run the Python training. Output that python prints goes to the variable $result, which is then
+    # thrown away. Let's put that back in in debug mode.
     my $train_cmd = "python face_recognizer.py train";
-    $result = `$train_cmd 2>nul`;
+    $result = `$train_cmd`;
+    if (1) {
+      print $result;
+    }
     
     if ($? == 0) {
         print "\nTraining completed successfully!\n";
