@@ -5,11 +5,11 @@
 # Tools to help sort thousands of unknown faces for training
 # 
 # Usage:
-#   perl FaceSorter.pl <config_name> stats                    # Show statistics about unknown faces
-#   perl FaceSorter.pl <config_name> duplicates               # Find and remove likely duplicates
-#   perl FaceSorter.pl <config_name> similar                  # Group similar faces together
-#   perl FaceSorter.pl <config_name> web [port]               # Start web interface for sorting
-#   perl FaceSorter.pl <config_name> batch-move <person>      # Move selected faces to person directory
+#   perl FaceSorter.pl stats                    # Show statistics about unknown faces
+#   perl FaceSorter.pl duplicates               # Find and remove likely duplicates
+#   perl FaceSorter.pl similar                  # Group similar faces together
+#   perl FaceSorter.pl web [port]               # Start web interface for sorting
+#   perl FaceSorter.pl batch-move <person>      # Move selected faces to person directory
 #
 
 use strict;
@@ -40,7 +40,6 @@ if (-e "AlbumSettings.".$WhichAlbum.".txt") {
 } else {
     die "Could not find configuration file AlbumSettings.".$WhichAlbum.".txt\n";
 }
-
 print "Using config '".$WhichAlbum."' which has unknown faces in '".$config->{UnknownFacesDir}."'\n";
 
 # Default settings
@@ -58,7 +57,7 @@ if ($command eq 'stats') {
 } elsif ($command eq 'duplicates') {
     find_duplicates();
 } elsif ($command eq 'similar') {
-    group_similar_faces();
+    group_similar_faces(@ARGV);
 } elsif ($command eq 'web') {
     start_web_interface(@ARGV);
 } elsif ($command eq 'batch-move') {
@@ -74,11 +73,11 @@ if ($command eq 'stats') {
 sub show_help {
     print "FaceSorter.pl - Tools for sorting unknown faces\n\n";
     print "Usage:\n";
-    print "  perl FaceSorter.pl [config] stats           # Show statistics\n";
-    print "  perl FaceSorter.pl [config] duplicates      # Find and remove duplicates\n";
-    print "  perl FaceSorter.pl [config] similar         # Group similar faces\n";
-    print "  perl FaceSorter.pl [config] web [port]      # Web interface for sorting\n";
-    print "  perl FaceSorter.pl [config] batch-move <person> # Move selected faces\n";
+    print "  perl FaceSorter.pl [config] stats                        # Show statistics\n";
+    print "  perl FaceSorter.pl [config] duplicates                   # Find and remove duplicates\n";
+    print "  perl FaceSorter.pl [config] similar <optional sub-dir>   # Group similar faces\n";
+    print "  perl FaceSorter.pl [config] web [port]                   # Web interface for sorting\n";
+    print "  perl FaceSorter.pl [config] batch-move <person>          # Move selected faces\n";
     print "\nExamples:\n";
     print "  perl FaceSorter.pl stats\n";
     print "  perl FaceSorter.pl web 8080\n";
@@ -237,7 +236,6 @@ sub find_duplicates {
                     print "  Error deleting: $files[$i]\n";
                 }
             }
-            print "\n";
         }
         
         printf "Total duplicate files that were removed: %d\n", $duplicate_files;
@@ -262,7 +260,9 @@ sub get_directory_size {
 
 #-----------------------------------------------------------------------------
 sub group_similar_faces {
-    print "Grouping similar faces using Python face recognition...\n";
+    my $subdirectory = shift;
+
+    print "Grouping similar faces in ".$canonicalSubdirectory." using Python face recognition...\n";
     
     my @unknown_faces = get_unknown_faces();
     my $total_faces = scalar(@unknown_faces);
@@ -445,7 +445,9 @@ sub batch_move_faces {
     
     if (!$person_name) {
         print "Usage: perl FaceSorter.pl batch-move <person_name>\n";
-        print "This will look for a file 'selected_faces.txt' with face filenames to move.\n";
+        print "This will look for a file 'selected_faces.txt' with face filenames to move,\n";
+        print "and will move the selected files from the unknown directory to the person's\n";
+        print "directory.\n";
         return;
     }
     
@@ -492,7 +494,22 @@ sub batch_move_faces {
 sub start_web_interface {
     my $port = shift || 8080;
     
-    print "Web interface not yet implemented.\n";
-    print "This would start a web server on port $port to help sort faces visually.\n";
-    print "For now, use the other commands to help organize your faces.\n";
+    print "Starting Face Sorter Web Interface...\n";
+    print "Server will start on: http://localhost:$port\n";
+    print "Press Ctrl+C to stop the server\n\n";
+    
+    # Check if Python web server exists
+    if (!-e "face_web_server.py") {
+        print "Error: face_web_server.py not found.\n";
+        print "Please make sure the web server file is in the current directory.\n";
+        return;
+    }
+    
+    # Start the Python web server
+    my $config_name = $config->{ConfigName};
+    my $config_file = "AlbumSettings.$config_name.txt";
+    my $cmd = "python face_web_server.py --port $port --config \"$config_file\"";
+    
+    print "Starting web server...\n";
+    exec($cmd) or die "Failed to start web server: $!\n";
 }
