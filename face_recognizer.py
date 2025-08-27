@@ -49,12 +49,17 @@ class FaceRecognizer:
         self.known_face_encodings = []
         self.known_face_names = []
         
-        print(f"Training face recognition model from '{self.training_dir}'...")
+        canonical_path = os.path.realpath(self.training_dir)
+
+        print(f"Training face recognition model from '{canonical_path}'...")
         
         # Walk through each person's directory
         for person_dir in os.listdir(self.training_dir):
             person_path = os.path.join(self.training_dir, person_dir)
             if not os.path.isdir(person_path):
+                continue
+                
+            if not person_dir.startswith("@"):
                 continue
                 
             print(f"  Training on photos of {person_dir}...")
