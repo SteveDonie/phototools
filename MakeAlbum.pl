@@ -610,13 +610,14 @@ sub generate_album_page_auth_body {
       </div>
 
       <script>
-        console.log('auth_body script running')
+        console.log('auth_body script running, about to call userbase.init()')
         userbase.init({ appId: '$config->{UserBaseAppId}' })
         .then((session) => {
           var authView = document.getElementById('auth-view')
           var albumContent = document.getElementById('album-content')
           if (session.user) {
-            console.log('User is logged in, show content')
+            console.log(`session and session.user are both truthy, showing album content:`)
+            console.log(JSON.stringify(session, null, 2))
 
             if (authView) { 
               console.log('hiding auth-view')
@@ -632,7 +633,7 @@ sub generate_album_page_auth_body {
               console.log('can not show album-content, not defined')
             }
 
-            showUserLoggedIn(session.user.username);
+            showUserLoggedIn(session.user);
             initListeners(session);
           } else {
             console.log('User not logged in, show login form')
@@ -1593,6 +1594,7 @@ $HTML = <<HTML;
       <div class="rightalign">
         <div id="logout-error"></div>
         <div id="LoggedInUser">&nbsp;</div>
+        <div id="UserAdmin">&nbsp;</div>
         &nbsp;&nbsp;
       </div>
     </div>
@@ -1797,6 +1799,7 @@ $HTML = <<HTML;
       <div class="rightalign">
         <div id="logout-error"></div>
         <div id="LoggedInUser">&nbsp;</div>
+        <div id="UserAdmin">&nbsp;</div>
         &nbsp;&nbsp;
       </div>
       $auth_script_html
@@ -2220,6 +2223,7 @@ HTML
       <div class="rightalign">
         <div id="logout-error"></div>
         <div id="LoggedInUser">&nbsp;</div>
+        <div id="UserAdmin">&nbsp;</div>
         &nbsp;&nbsp;
         <a href="$config->{HomePageURL}$config->{AlbumPageURL}$config->{RSSFeedName}"><img border="0" alt="RSS Feed of new images" src="rss.gif"></a>
       </div>
@@ -2696,6 +2700,7 @@ $HTML = <<HTML;
     <div class="rightalign">
       <div id="logout-error"></div>
       <div id="LoggedInUser">&nbsp;</div>
+      <div id="UserAdmin">&nbsp;</div>
       &nbsp;&nbsp;
     </div>
     
@@ -2860,7 +2865,8 @@ HTML
 
   # create each tag page...
   # do in a seperate loop to be able to use OUTFILE in call, all over
-  &log ("creating pages for each tag\n","info");
+  my $numTags = scalar keys %tagshash;
+  &log ("creating pages for each tag, $numTags total\n","info");
 
   for $tag (keys %tagshash)
   {

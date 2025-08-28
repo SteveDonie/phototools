@@ -9,17 +9,6 @@
  also check for authorized==true, rather than just user exists.  
 */
 
-
-function changeButton() {
-  var x = document.querySelector("#LoginButton");
-  if (x.value == "Show Login") {
-    x.value = "Hide Login";
-  } else {
-    x.value = "Show Login";
-  }
-}
-
-
 function handleSignUp(e) {
   e.preventDefault()
 
@@ -44,16 +33,18 @@ function handleLogin(e) {
 }
 
 function showUserLoggedIn(user) {
-  var msg = 'showUserLoggedIn(' + user.username + ')'
+  var msg = 'showUserLoggedIn(' + JSON.stringify(user, null, 2) + ')'
   console.log(msg)
   document.getElementById('auth-view').style.display = 'none'
   document.getElementById('album-content').style.display = 'block';
   document.getElementById('LoggedInUser').style.display = 'block';
   var userLoginInfo = "logged in as <a href=\"#\" title=\"click to log out\">" + user.username + "</a>";
-  if (user.username == 'stevedonie') {
-    userLoginInfo = `${userLoginInfo} <a href=\"userAdmin.html\">User Admin</a>`;
-  }
   document.getElementById('LoggedInUser').innerHTML = userLoginInfo;
+  if (user.username == 'stevedonie') {
+    var userAdminInfo = `&nbsp;&nbsp;<a href=\"https://album.donie.us/personal/userAdmin.html\">User Admin</a>`;
+    document.getElementById('UserAdmin').innerHTML = userAdminInfo;
+    document.getElementById('UserAdmin').style.display = 'block';
+  }
 }
 
 function handleLogout() {
@@ -79,14 +70,15 @@ function resetAuthFields() {
     document.getElementById('signup-email').value = ''
     document.getElementById('signup-error').innerText = ''
     document.getElementById('LoggedInUser').innerText = ''
-    document.getElementById('LoginButton').style.display = 'block'
+    document.getElementById('UserAdmin').innerText = '';
     document.getElementById('LoggedInUser').style.display = 'none';
+    document.getElementById('UserAdmin').style.display = 'none';
     document.getElementById('album-content').style.display = 'none';
   }
 }
 
 function initListeners(session) {
-  console.log(`initListeners called, session is $session`)
+  console.log('initListeners called, session is (' + JSON.stringify(session, null, 2) + ')')
   document.getElementById('signup-form').addEventListener('submit', handleSignUp)
   document.getElementById('login-form').addEventListener('submit', handleLogin)
   
@@ -102,14 +94,18 @@ function initListeners(session) {
   if (albumContent) {
     if (session) {
       if (session.user) {
-        console.log ('session.user is true, initListeners showing album-content')
+        console.log ('session AND session.user are truthy - (' + JSON.stringify(session, null, 2) + ') initListeners showing album-content')
         albumContent.style.display = 'block'
-      } 
+      } else {
+        console.log ('session is truthy but session.user is falsy - (' + JSON.stringify(session, null, 2) + '), initListeners hiding album-content')
+        handleLogout()
+        albumContent.style.display = 'none'
+      }        
     } else {
-      console.log ('session.user is false, initListeners hiding album-content')
+      console.log ('session is falsy - (' + JSON.stringify(session, null, 2) + '), initListeners hiding album-content')
       albumContent.style.display = 'none'
     }
   } else {
-    console.log('initListeners can not show/hide album-content, not defined')
+    console.log('initListeners can not show/hide album-content, script not able to find element with id album-content')
   }
 }
