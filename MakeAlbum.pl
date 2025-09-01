@@ -616,25 +616,36 @@ sub generate_album_page_auth_body {
           var authView = document.getElementById('auth-view')
           var albumContent = document.getElementById('album-content')
           if (session.user) {
-            console.log(`session and session.user are both truthy, showing album content:`)
+            currentUser = session.user;
+            console.log(`session and session.user are both truthy, checking user authorization:`)
             console.log(JSON.stringify(session, null, 2))
-
-            if (authView) { 
-              console.log('hiding auth-view')
-              authView.style.display = 'none'; 
-             } else {
-               console.log('can not hide auth view, not defined')
-             }
             
-            if (albumContent) { 
-              console.log('showing album-content')
-              albumContent.style.display = 'block'; 
-            } else {
-              console.log('can not show album-content, not defined')
-            }
+            // Update user profile data
+            updateUserProfile(currentUser);
+            
+            // Check authorization
+            const isAuthorized = checkUserAuthorization(currentUser);
 
-            showUserLoggedIn(session.user);
-            initListeners(session);
+            if (isAuthorized) {
+              if (authView) { 
+                console.log('hiding auth-view')
+                authView.style.display = 'none'; 
+               } else {
+                 console.log('can not hide auth view, not defined')
+               }
+              
+              if (albumContent) { 
+                console.log('showing album-content')
+                albumContent.style.display = 'block'; 
+              } else {
+                console.log('can not show album-content, not defined')
+              }
+
+              showUserLoggedIn(session.user);
+              initListeners(session);
+            } else {
+              showUnauthorizedMessage();
+            }
           } else {
             console.log('User not logged in, show login form')
             

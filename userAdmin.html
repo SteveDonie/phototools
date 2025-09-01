@@ -215,7 +215,7 @@
         }
         
         .user-id {
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             color: #666;
             font-family: 'Courier New', monospace;
         }
@@ -364,6 +364,7 @@
     <script>
         let currentAdmin = null;
         let allUsers = [];
+        const DATABASE_NAME = 'user-profiles';
 
         // DOM elements
         const loginSection = document.getElementById('loginSection');
@@ -420,17 +421,18 @@
         // Refresh users handler
         refreshBtn.addEventListener('click', loadUsers);
 
-        // Check if user is admin (you'll need to customize this logic)
+        /***************************************************************************
+        * Check if user is admin. Right now, just me.
+        */
         function isAdmin(user) {
             // Option 1: Check against hardcoded admin usernames
             const adminUsernames = ['stevedonie']; // add others if needed
             return adminUsernames.includes(user.username);
-            
-            // Option 2: Check a profile field (if you store admin status in user profile)
-            // return user.profile && user.profile.isAdmin === true;
         }
 
-        // Show admin panel
+        /***************************************************************************
+        * Show admin panel
+        */
         function showAdminPanel(user) {
             currentAdmin = user;
             loginSection.style.display = 'none';
@@ -438,7 +440,9 @@
             loadUsers();
         }
 
-        // Show login section
+        /***************************************************************************
+        * Show login section
+        */
         function showLoginSection() {
             currentAdmin = null;
             loginSection.style.display = 'block';
@@ -446,22 +450,19 @@
             clearError();
         }
 
-        // Load all users (this is a simplified version - you'll need to implement user listing)
+        /***************************************************************************
+        * Load all users, update stats, display user cards
+        * 
+        */
         async function loadUsers() {
             loading.style.display = 'block';
             usersList.innerHTML = '';
             
             try {
-                // Note: Userbase doesn't have a built-in admin API to list all users
-                // You'll need to implement this by having users store their info in a shared database
-                // or use Userbase's admin APIs if available in your plan
-                
-                // For now, this is a placeholder implementation
-                // You might need to store user registrations in a database that admins can access
-                allUsers = await getUsersFromDatabase(); // You'll need to implement this
-                
-                updateStats();
+                allUsers = await getUsersFromDatabase();
+                await populateAllUserProfiles();
                 displayUsers();
+                updateStats();
             } catch (error) {
                 showError('Error loading users: ' + error.message);
             } finally {
@@ -469,6 +470,57 @@
             }
         }
 
+        /***************************************************************************
+        * This function just gets the userbase users, which have a minimal amount of data:
+        *  "username": "jordanldonie",
+        *  "userId": "a6bae321-e339-4ef5-a4b6-52cb7d6e8385",
+        *  "appId": "b6a8348d-da63-495e-9600-e4f3368cc3f3",
+        *  "creationDate": "2025-08-04T01:17:41.296Z",
+        *  "email": "jordanlynn.donie@gmail.com"
+        *
+        * This has been expanded with a separate table, and the code makes it so that 
+        * the user objects that get returned also have a profile field, and the profile 
+        * is actually stored in a separate table in userbase. The two tables are linked 
+        * by userId.
+        *
+        * The user objects that get used by the app get filled in by the function 
+        * populateAllUserProfiles() so that the final 'filled in' objects look like:
+        
+            displaying user: {
+              "username": "jordandonie",
+              "userId": "a2250c47-ce59-4bc3-b09d-ece9695b5b2f",       <---|
+              "appId": "b6a8348d-da63-495e-9600-e4f3368cc3f3",            |
+              "creationDate": "2025-07-24T23:21:10.690Z",                 |
+              "email": "jordan@donie.us",                                 |-- linkage
+              "profile": {                                                |
+                "itemId": "e3b22ab7-0357-4fe0-850b-8c27f4df6f1e",         |
+                "item": {                                                 |
+                  "userId": "a2250c47-ce59-4bc3-b09d-ece9695b5b2f",   <---|
+                  "isAuthorized": true,
+                  "userName": "jordandonie",
+                  "lastActive": "2025-08-30T21:37:23.792Z",
+                  "updatedAt": "2025-08-30T21:37:23.792Z",
+                  "firstSeen": "2025-08-30T21:37:23.792Z",
+                  "loginCount": 0,
+                  "deviceType": "",
+                  "location": "",
+                  "displayName": "",
+                  "adminNotes": "",
+                  "lastAuthorizedBy": "stevedonie",
+                  "authorizedAt": "2025-08-30T21:37:23.792Z"
+                },
+                "createdBy": {
+                  "timestamp": "2025-08-29T21:25:46.774Z",
+                  "username": "stevedonie"
+                },
+                "updatedBy": {
+                  "timestamp": "2025-08-30T21:37:24.942Z",
+                  "username": "stevedonie"
+                }
+              }
+            }
+        * 
+        */
         async function getUsersFromDatabase() {
           let userbaseURL = 'https://v1.userbase.com/v1/admin/apps/b6a8348d-da63-495e-9600-e4f3368cc3f3/users'
           try {
@@ -482,52 +534,207 @@
                 throw new Error(`Response status: ${response.status}`);
               }
               const responseObject = await response.json();
-              console.log('responseObject: ' + responseObject);
+              console.log('getUsersFromDatabase() responseObject: ' + JSON.stringify(responseObject, null, 2));
               return responseObject.users;
           } catch (error) {
             console.error('Error listing users:', error);
           }
         }
 
-        // Update user authorization status
-        async function updateUserAuth(userId, isAuthorized) {
-            try {
-                // Update the user's authorization status in your database
-                await userbase.updateItem({
-                    databaseName: 'user-profiles',
-                    itemId: userId,
-                    item: { 
-                        userId: userId,
-                        isAuthorized: isAuthorized,
-                        lastUpdated: new Date().toISOString(),
-                        updatedBy: currentAdmin.username
-                    }
-                });
-                
-                // Refresh the users list
-                await loadUsers();
-                showSuccess(`User ${isAuthorized ? 'authorized' : 'unauthorized'} successfully!`);
+        /***************************************************************************
+        * Update user profile - change authorization status
+        *
+        */
+        async function updateUserAuth(userId, newAuthorizationStatus) {
+
+          const DATABASE_NAME = 'user-profiles';
+          let database = null;
+          
+          // Open the user profiles database (create if doesn't exist)
+          try {
+              database = await userbase.openDatabase({ 
+                  databaseName: DATABASE_NAME,
+                  changeHandler: (profiles) => {
+                      // Optional: Handle real-time updates to user profiles
+                      console.log('User profiles opened for updating auth status:', profiles);
+                  }
+              });
+
+              console.log(`Database "${DATABASE_NAME}" opened successfully`);
+
+          } catch (error) {
+              // If database doesn't exist, it will be created on first insert
+              console.log(`Database "${DATABASE_NAME}" will be created on first use`);
+          }
+
+          // Get current database contents to find existing profile
+          try {
+              let existingProfile = null;
+              let allProfiles = [];
+
+              // We need to track profiles through the changeHandler
+              // First, let's try to open the database to get existing data
+              let databaseOpened = false;
+              
+              try {
+                  await userbase.openDatabase({ 
+                      databaseName: DATABASE_NAME,
+                      changeHandler: (profiles) => {
+                          allProfiles = profiles || [];
+                          
+                          // Find existing profile for this user
+                          existingProfile = allProfiles.find(profile => 
+                              profile.item && profile.item.userId === userId
+                          );
+                      }
+                  });
+                  databaseOpened = true;
+                  
+              } catch (openError) {
+                  console.log('Database doesn\'t exist yet, will create on first insert');
+              }
+
+              let result;
+
+              if (existingProfile) {
+                  // Update existing profile
+                  console.log(`Updating existing profile for userId: ${userId}`);
+                  var msg = 'existing profile (' + JSON.stringify(existingProfile, null, 2) + ')'
+                  console.log(msg)
+
+                  let newProfile = existingProfile;
+                  newProfile.item.isAuthorized = newAuthorizationStatus;
+                  
+                  result = await userbase.updateItem({
+                      databaseName: DATABASE_NAME,
+                      itemId: existingProfile.itemId,
+                      item: newProfile
+                  });
+
+                  msg = 'Profile updated sucessfully. New profile: (' + JSON.stringify(newProfile, null, 2) + ')'
+                  console.log(msg)
+
+                  showSuccess(`user authorization for the photo album set to ${newAuthorizationStatus}`)
+                  loadUsers()
+              } else {
+                  // create new profile, filled in.
+                const currentTime = new Date().toISOString();
+                const profileData = {
+                  userId: userId,
+                  username: '',
+                  email: '',
+                  isAuthorized: newAuthorizationStatus,
+                  lastActive: currentTime,
+                  updatedAt: currentTime,
+                  firstSeen: currentTime,
+                  loginCount: 0,
+                  deviceType: '',
+                  location: '',
+                  displayName: '',
+                  adminNotes: '',
+                  lastAuthorizedBy: '',
+                  authorizedAt: ''
+                };
+
+                var profile = await userbase.insertItem({
+                      databaseName: DATABASE_NAME,
+                      item: profileData
+                    });
+                msg = 'New profile created for user. New profile: (' + JSON.stringify(profile, null, 2) + ')'
+                console.log(msg)
+
+                showSuccess(`user authorization for the photo album set to ${newAuthorizationStatus}`)
+                loadUsers()
+
+              }
             } catch (error) {
-                showError('Error updating user: ' + error.message);
+              console.error('Error updating user profile:', error);
+              
+              // Log more specific error information
+              if (error.name === 'DatabaseNotOpen') {
+                  console.error('Database connection issue. Retrying...');
+                  // Could implement retry logic here
+              } else if (error.name === 'ItemNotFound') {
+                  console.error('Attempted to update non-existent profile');
+              } else if (error.name === 'ItemAlreadyExists') {
+                  console.error('Profile creation conflict');
+              }
+              
+              // Return error information instead of throwing
+              // This prevents login failures due to profile update issues
+              return {
+                  success: false,
+                  error: error.message,
+                  profileData: null
+              };
             }
+
         }
 
-        // Display users in the grid
+        /***************************************************************************
+        * After the getUsersFromDatabase function is called (which populates the allUsers
+        * variable), this function should be called to populate each of the users with
+        * their profile data.
+        */
+        async function populateAllUserProfiles() {
+          console.log('populating all user profiles')
+          try {
+              await userbase.openDatabase({ 
+                  databaseName: DATABASE_NAME,
+                  changeHandler: (profiles) => {
+                      allProfiles = profiles || [];
+                      
+                      allProfiles.forEach(profile => {
+                          // Print each existing profile
+                          var msg = 'unassociated profile: (' + JSON.stringify(profile, null, 2) + ')'
+                          console.log(msg)
+
+                          allUsers.forEach(user => {
+                            if (user.userId == profile.item.userId) {
+                              user.profile = profile;
+                              console.log(`associating profile itemId ${profile.itemId} with user ${user.username}`) 
+                            }
+                          })
+                      });
+                  }
+              });
+          } catch (error) {
+              console.log(error);
+          }
+          
+          // are there any users that don't have populated profiles now? What if that is true?
+          allUsers.forEach(user => {
+            if (! user.profile) {
+              console.log(`user ${user.username} does not have an associated profile`) 
+            }
+          })
+
+        }
+        
+
+        /***************************************************************************
+        * Display users in the grid
+        */
         function displayUsers() {
+            console.log(`displaying all ${allUsers.length} users`)
             usersList.innerHTML = '';
             
             allUsers.forEach(userData => {
                 const userCard = createUserCard(userData);
                 usersList.appendChild(userCard);
+                console.log('displaying user: ' + JSON.stringify(userData,null,2))
             });
         }
 
-        // Create user card element
+        /***************************************************************************
+        * Create user card element
+        */
         function createUserCard(userData) {
             const userName = userData.username;
-            const isAuthorized = userData.item?.isAuthorized || false;
+            const isAuthorized = userData.profile?.item?.isAuthorized || false;
             const userId = userData.userId;
             const userEmail = userData.email;
+            const lastActive = userData.profile?.item?.lastActive || 'no profile yet'
             
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -537,6 +744,7 @@
                     <div class="user-name">${userName}</div>
                     <div class="user-email">${userEmail}</div>
                     <div class="user-id">ID: ${userId}</div>
+                    <div class="user-id">Last active: ${lastActive}</div>
                 </div>
                 <div class="user-status ${isAuthorized ? 'status-authorized' : 'status-unauthorized'}">
                     ${isAuthorized ? 'Authorized' : 'Unauthorized'}
@@ -552,10 +760,12 @@
             return card;
         }
 
-        // Update statistics
+        /***************************************************************************
+        * Update statistics
+        */
         function updateStats() {
             const total = allUsers.length;
-            const authorized = allUsers.filter(u => u.item?.isAuthorized).length;
+            const authorized = allUsers.filter(u => u.profile?.item?.isAuthorized).length;
             const unauthorized = total - authorized;
             
             totalUsersEl.textContent = total;
@@ -563,16 +773,24 @@
             unauthorizedUsersEl.textContent = unauthorized;
         }
 
-        // Utility functions
+        /***************************************************************************
+        * Utility functions
+        */
         function showError(message) {
             loginError.innerHTML = `<div class="error">${message}</div>`;
             loginError.style.display = 'block';
         }
 
+        /***************************************************************************
+        * clear login error div
+        */
         function clearError() {
             loginError.style.display = 'none';
         }
 
+        /***************************************************************************
+        * show success message
+        */
         function showSuccess(message) {
             const successDiv = document.createElement('div');
             successDiv.className = 'success';
