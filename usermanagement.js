@@ -20,7 +20,7 @@ function handleSignUp(e) {
 }
 
 function createUserProfile(user, email) {
-  console.log(`User registered: ${user.username}`);
+  console.log(`User registered: ${user.username}`); // NOTE THAT USERNAME IS REQUIRED!
 
   // Create their profile in the admin database
   const profileResult = updateUserProfile(user, {
@@ -127,15 +127,18 @@ function initListeners(session) {
   if (albumContent) {
     if (session) {
       if (session.user) {
-        console.log ('session AND session.user are truthy - (' + JSON.stringify(session, null, 2) + ') initListeners showing album-content')
+        console.log ('session AND session.user are truthy - (' + JSON.stringify(session, null, 2) + ')');
+        console.log ('  initListeners showing album-content');
         albumContent.style.display = 'block'
       } else {
-        console.log ('session is truthy but session.user is falsy - (' + JSON.stringify(session, null, 2) + '), initListeners hiding album-content')
+        console.log ('session is truthy but session.user is falsy - (' + JSON.stringify(session, null, 2) + ')');
+        console.log ('  initListeners hiding album-content');
         handleLogout()
         albumContent.style.display = 'none'
       }        
     } else {
-      console.log ('session is falsy - (' + JSON.stringify(session, null, 2) + '), initListeners hiding album-content')
+      console.log ('session is falsy - (' + JSON.stringify(session, null, 2) + ')');
+      console.log ('  initListeners hiding album-content');
       albumContent.style.display = 'none'
     }
   } else {
@@ -208,7 +211,7 @@ async function updateUserProfile(user, additionalData = {}) {
                     
                     // Find existing profile for this user
                     existingProfile = allProfiles.find(item => 
-                        item.userId === user.userId
+                        item.userName === user.userName
                     );
                 }
             });
@@ -256,15 +259,17 @@ async function updateUserProfile(user, additionalData = {}) {
 
         if (existingProfile) {
             // Update existing profile
-            console.log(`Updating existing profile for user: ${user.username}`);
+            console.log (`Updating existing profile for user: ${user.username}`);
+            console.log (`  existing.isAuthorized state is ${existingProfile.isAuthorized}`);
             
             result = await userbase.updateItem({
                 databaseName: DATABASE_NAME,
                 itemId: existingProfile.itemId,
-                profile: profileData
+                item: profileData
             });
 
             console.log('Profile updated successfully');
+            console.log(`  User ${user.username} is logged in. isAuthorized: ${profileData.isAuthorized}`);
 
         } else {
             // Create new profile
@@ -323,6 +328,8 @@ async function checkUserAuthorization(user) {
     if (!user || !user.userId) {
         return false;
     }
+    
+    console.log(`checkUserAuthorization for user: ${user.username}`);
 
     return new Promise((resolve) => {
         let resolved = false;
@@ -333,7 +340,7 @@ async function checkUserAuthorization(user) {
                 if (resolved) return; // Prevent multiple resolutions
                 
                 const userProfile = profiles.find(item => 
-                    item.userId === user.userId
+                    item.userName === user.userName
                 );
                 
                 const isAuthorized = userProfile?.isAuthorized || false;
@@ -354,15 +361,20 @@ async function checkUserAuthorization(user) {
 
 /**
  * Enhanced login function that includes profile updating
- * Replace your existing login function with this
+ * Replace your existing login function with this.
  */
-async function signInUserWithProfile(username, password, additionalData = {}) {
+async function signInUserWithProfile(username, password) {
     try {
         // Sign in to Userbase
         const user = await userbase.signIn({ username, password });
         console.log(`User signed in: ${user.username}`);
         
-        // Update their profile in the admin database
+        // Get their profile from the admin database
+        const currentTime = new Date().toISOString();
+        // create a minimal additionalData object to be filled in
+        var additionalData = {
+          lastActive: currentTime
+        }
         const profileResult = await updateUserProfile(user, additionalData);
         
         if (!profileResult.success) {

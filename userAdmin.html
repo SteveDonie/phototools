@@ -364,7 +364,7 @@
     <script>
         let currentAdmin = null;
         let allUsers = [];
-        const DATABASE_NAME = 'user-profiles';
+        const PROFILES_DATABASE_NAME = 'user-profiles';
 
         // DOM elements
         const loginSection = document.getElementById('loginSection');
@@ -547,24 +547,24 @@
         */
         async function updateUserAuth(userId, newAuthorizationStatus) {
 
-          const DATABASE_NAME = 'user-profiles';
+          const PROFILES_DATABASE_NAME = 'user-profiles';
           let database = null;
           
           // Open the user profiles database (create if doesn't exist)
           try {
               database = await userbase.openDatabase({ 
-                  databaseName: DATABASE_NAME,
+                  databaseName: PROFILES_DATABASE_NAME,
                   changeHandler: (profiles) => {
                       // Optional: Handle real-time updates to user profiles
                       console.log('User profiles opened for updating auth status:', profiles);
                   }
               });
 
-              console.log(`Database "${DATABASE_NAME}" opened successfully`);
+              console.log(`Database "${PROFILES_DATABASE_NAME}" opened successfully`);
 
           } catch (error) {
               // If database doesn't exist, it will be created on first insert
-              console.log(`Database "${DATABASE_NAME}" will be created on first use`);
+              console.log(`Database "${PROFILES_DATABASE_NAME}" will be created on first use`);
           }
 
           // Get current database contents to find existing profile
@@ -578,7 +578,7 @@
               
               try {
                   await userbase.openDatabase({ 
-                      databaseName: DATABASE_NAME,
+                      databaseName: PROFILES_DATABASE_NAME,
                       changeHandler: (profiles) => {
                           allProfiles = profiles || [];
                           
@@ -586,6 +586,9 @@
                           existingProfile = allProfiles.find(profile => 
                               profile.item && profile.item.userId === userId
                           );
+                          console.log(`Found existing profile for userId: ${userId}`);
+                          var msg = 'existing profile (' + JSON.stringify(existingProfile, null, 2) + ')'
+                          console.log(msg)
                       }
                   });
                   databaseOpened = true;
@@ -606,7 +609,7 @@
                   newProfile.item.isAuthorized = newAuthorizationStatus;
                   
                   result = await userbase.updateItem({
-                      databaseName: DATABASE_NAME,
+                      databaseName: PROFILES_DATABASE_NAME,
                       itemId: existingProfile.itemId,
                       item: newProfile
                   });
@@ -637,7 +640,7 @@
                 };
 
                 var profile = await userbase.insertItem({
-                      databaseName: DATABASE_NAME,
+                      databaseName: PROFILES_DATABASE_NAME,
                       item: profileData
                     });
                 msg = 'New profile created for user. New profile: (' + JSON.stringify(profile, null, 2) + ')'
@@ -680,21 +683,34 @@
           console.log('populating all user profiles')
           try {
               await userbase.openDatabase({ 
-                  databaseName: DATABASE_NAME,
+                  databaseName: PROFILES_DATABASE_NAME,
                   changeHandler: (profiles) => {
                       allProfiles = profiles || [];
                       
                       allProfiles.forEach(profile => {
-                          // Print each existing profile
-                          var msg = 'unassociated profile: (' + JSON.stringify(profile, null, 2) + ')'
-                          console.log(msg)
-
+                          var wasProfileAssociated = false;
+                          // Look at users that match the profile, and associate them
                           allUsers.forEach(user => {
-                            if (user.userId == profile.item.userId) {
+                            if (user.userId == profile.item.userId && user.profile == null) {
                               user.profile = profile;
-                              console.log(`associating profile itemId ${profile.itemId} with user ${user.username}`) 
+                              console.log(`associating profile itemId ${profile.itemId} with user ${user.username}`)
+                              wasProfileAssociated = true;
+                              var msg = '  associated profile: (' + JSON.stringify(profile, null, 2) + ')'
+                              console.log(msg)
                             }
                           })
+                          
+                          if (! wasProfileAssociated) {
+                            // delete unused profile, stuff shouldn't get in there, but the db sucks, so for now....
+                            console.log(`deleting unassociated profile with id ${profile.itemId}`)
+                            userbase.deleteItem({
+                              databaseName: PROFILES_DATABASE_NAME, 
+                              itemId: `${profile.itemId}`
+                            }).then(() => {
+                              // item deleted
+                              console.log ('deletion successful')
+                            }).catch((e) => console.log(e))
+                          }
                       });
                   }
               });
