@@ -105,7 +105,7 @@
   AlbumPageURL => "photos/",
     
   # Facial recognition settings. More details on this in FaceRecognition.txt
-  EnableFaceRecognition => 1,       # 1 or 0
+  EnableFaceRecognition => 0,       # 1 or 0
   FaceTrainingDir => 'faces',       # directory name, relative to phototools directory
   FaceConfidenceThreshold => 0.6,   # not sure what this is. Probably 0.0 - 1.0
   UnknownFaceHandling => 'detect',  # 'detect' or 'ignore'
