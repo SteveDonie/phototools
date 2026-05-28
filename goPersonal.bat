@@ -42,6 +42,10 @@ echo %TIME% - Starting MakeAlbum.pl for ancestry >> timing.txt
 perl MakeAlbum.pl ancestry.aws
 echo %TIME% - Finished MakeAlbum.pl for ancestry >> timing.txt
 
+echo %TIME% - Starting MakeAlbum.pl for brain tumor >> timing.txt
+perl MakeAlbum.pl brainTumor.aws
+echo %TIME% - Finished MakeAlbum.pl for brain tumor >> timing.txt
+
 echo. >> timing.txt
 echo Time to sync to S3 >> timing.txt
 
