@@ -26,5 +26,9 @@ aws s3 sync "%USERPROFILE%\albums\family" s3://album.donie.us/family --delete
 echo Syncing album 'personal'
 aws s3 sync "%USERPROFILE%\albums\personal" s3://album.donie.us/personal --delete
 
+echo Syncing album 'brainTumor'
+aws s3 sync "%USERPROFILE%\albums\brainTumor" s3://album.donie.us/brainTumor --delete
+
+
 REM Create CloudFront invalidation
 aws cloudfront create-invalidation --distribution-id EUW7OI0F4K5GR --paths "/*"
