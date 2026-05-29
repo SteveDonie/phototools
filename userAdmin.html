@@ -366,23 +366,43 @@
         let allUsers = [];
         const PROFILES_DATABASE_NAME = 'user-profiles';
 
+        // FIX: The Userbase admin API bearer token must NOT live in client-side JS.
+        // Anyone who views source can steal it and make admin API calls directly.
+        //
+        // The right fix is to move getUsersFromDatabase() to a small server-side
+        // endpoint (a Netlify/Vercel function, a Node proxy, etc.) that holds the
+        // token in an environment variable and returns only the data this page needs.
+        //
+        // For now the token has been removed from this file. Replace the placeholder
+        // below with your server-side proxy URL, or add the token back temporarily
+        // only on a locally-served, non-public copy.
+        const USERBASE_APP_ID  = 'b6a8348d-da63-495e-9600-e4f3368cc3f3';
+        const USERS_PROXY_URL  = '/api/admin-users'; // <-- your server-side proxy
+
         // DOM elements
-        const loginSection = document.getElementById('loginSection');
-        const adminPanel = document.getElementById('adminPanel');
-        const loginForm = document.getElementById('loginForm');
-        const loginError = document.getElementById('loginError');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const usersList = document.getElementById('usersList');
-        const loading = document.getElementById('loading');
-        const totalUsersEl = document.getElementById('totalUsers');
+        const loginSection      = document.getElementById('loginSection');
+        const adminPanel        = document.getElementById('adminPanel');
+        const loginForm         = document.getElementById('loginForm');
+        const loginError        = document.getElementById('loginError');
+        const logoutBtn         = document.getElementById('logoutBtn');
+        const refreshBtn        = document.getElementById('refreshBtn');
+        const usersList         = document.getElementById('usersList');
+        const loading           = document.getElementById('loading');
+        const totalUsersEl      = document.getElementById('totalUsers');
         const authorizedUsersEl = document.getElementById('authorizedUsers');
         const unauthorizedUsersEl = document.getElementById('unauthorizedUsers');
 
-        // Check if already signed in
-        userbase.init({ appId: 'b6a8348d-da63-495e-9600-e4f3368cc3f3' }).then((session) => {
-            if (session.user) {
+        // FIX: Run isAdmin() check on session restore, not just on login.
+        // Previously any signed-in user would land on the admin panel after a
+        // page refresh without ever going through the isAdmin() gate.
+        userbase.init({ appId: USERBASE_APP_ID }).then((session) => {
+            if (session.user && isAdmin(session.user)) {
                 showAdminPanel(session.user);
+            } else if (session.user) {
+                // Signed in but not an admin — sign them out and show login.
+                userbase.signOut().catch(console.error);
+                showLoginSection();
+                showError('Access denied. Admin privileges required.');
             }
         }).catch(console.error);
 
@@ -396,11 +416,10 @@
             try {
                 const user = await userbase.signIn({ username, password });
                 
-                // Here you should check if this user is actually an admin
-                // You could store this in the user profile or check against a hardcoded list
                 if (isAdmin(user)) {
                     showAdminPanel(user);
                 } else {
+                    await userbase.signOut();
                     showError('Access denied. Admin privileges required.');
                 }
             } catch (error) {
@@ -422,11 +441,10 @@
         refreshBtn.addEventListener('click', loadUsers);
 
         /***************************************************************************
-        * Check if user is admin. Right now, just me.
+        * Check if user is admin.
         */
         function isAdmin(user) {
-            // Option 1: Check against hardcoded admin usernames
-            const adminUsernames = ['stevedonie']; // add others if needed
+            const adminUsernames = ['stevedonie'];
             return adminUsernames.includes(user.username);
         }
 
@@ -452,7 +470,6 @@
 
         /***************************************************************************
         * Load all users, update stats, display user cards
-        * 
         */
         async function loadUsers() {
             loading.style.display = 'block';
@@ -471,274 +488,188 @@
         }
 
         /***************************************************************************
-        * This function just gets the userbase users, which have a minimal amount of data:
-        *  "username": "jordanldonie",
-        *  "userId": "a6bae321-e339-4ef5-a4b6-52cb7d6e8385",
-        *  "appId": "b6a8348d-da63-495e-9600-e4f3368cc3f3",
-        *  "creationDate": "2025-08-04T01:17:41.296Z",
-        *  "email": "jordanlynn.donie@gmail.com"
+        * Fetch the list of Userbase users.
         *
-        * This has been expanded with a separate table, and the code makes it so that 
-        * the user objects that get returned also have a profile field, and the profile 
-        * is actually stored in a separate table in userbase. The two tables are linked 
-        * by userId.
+        * FIX: Token removed from client-side code. This now calls a server-side
+        * proxy that holds the bearer token in an environment variable.
+        * See USERS_PROXY_URL above.
         *
-        * The user objects that get used by the app get filled in by the function 
-        * populateAllUserProfiles() so that the final 'filled in' objects look like:
-        
-            displaying user: {
-              "username": "jordandonie",
-              "userId": "a2250c47-ce59-4bc3-b09d-ece9695b5b2f",       <---|
-              "appId": "b6a8348d-da63-495e-9600-e4f3368cc3f3",            |
-              "creationDate": "2025-07-24T23:21:10.690Z",                 |
-              "email": "jordan@donie.us",                                 |-- linkage
-              "profile": {                                                |
-                "itemId": "e3b22ab7-0357-4fe0-850b-8c27f4df6f1e",         |
-                "item": {                                                 |
-                  "userId": "a2250c47-ce59-4bc3-b09d-ece9695b5b2f",   <---|
-                  "isAuthorized": true,
-                  "userName": "jordandonie",
-                  "lastActive": "2025-08-30T21:37:23.792Z",
-                  "updatedAt": "2025-08-30T21:37:23.792Z",
-                  "firstSeen": "2025-08-30T21:37:23.792Z",
-                  "loginCount": 0,
-                  "deviceType": "",
-                  "location": "",
-                  "displayName": "",
-                  "adminNotes": "",
-                  "lastAuthorizedBy": "stevedonie",
-                  "authorizedAt": "2025-08-30T21:37:23.792Z"
-                },
-                "createdBy": {
-                  "timestamp": "2025-08-29T21:25:46.774Z",
-                  "username": "stevedonie"
-                },
-                "updatedBy": {
-                  "timestamp": "2025-08-30T21:37:24.942Z",
-                  "username": "stevedonie"
-                }
-              }
-            }
-        * 
+        * The response shape is the same as the direct Userbase admin API:
+        *   { users: [ { username, userId, appId, creationDate, email }, ... ] }
         */
         async function getUsersFromDatabase() {
-          let userbaseURL = 'https://v1.userbase.com/v1/admin/apps/b6a8348d-da63-495e-9600-e4f3368cc3f3/users'
-          try {
-            const response = await fetch(userbaseURL, { 
-                  method: 'GET',
-                  headers: {
-                    'Authorization': 'Bearer lf62dDVoQat0Bpct+7u8WkJch02afs2/QMrWsK49n0s=	'
-                  }
-              });
-              if (!response.ok) {
+            const response = await fetch(USERS_PROXY_URL, { method: 'GET' });
+            if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
-              }
-              const responseObject = await response.json();
-              console.log('getUsersFromDatabase() responseObject: ' + JSON.stringify(responseObject, null, 2));
-              return responseObject.users;
-          } catch (error) {
-            console.error('Error listing users:', error);
-          }
+            }
+            const responseObject = await response.json();
+            console.log('getUsersFromDatabase() responseObject:', responseObject);
+            return responseObject.users;
+        }
+
+        /***************************************************************************
+        * Open the profiles database and return a Promise that resolves with the
+        * first snapshot of profiles delivered to the changeHandler.
+        *
+        * This helper is the key to fixing the race condition: callers can await it
+        * and know the data is actually there when they proceed.
+        */
+        function openDatabaseAndGetProfiles() {
+            return new Promise((resolve, reject) => {
+                userbase.openDatabase({
+                    databaseName: PROFILES_DATABASE_NAME,
+                    changeHandler: (profiles) => {
+                        // changeHandler fires whenever data changes; we only need
+                        // the first delivery to get a consistent snapshot.
+                        resolve(profiles || []);
+                    }
+                }).catch(reject);
+            });
         }
 
         /***************************************************************************
         * Update user profile - change authorization status
         *
+        * FIX: Was opening the database twice (once at the top, once inside the try
+        * block) and then checking existingProfile synchronously before the async
+        * changeHandler had a chance to fire — so existingProfile was always null
+        * and new duplicate profiles were created on every auth toggle.
+        *
+        * Now uses openDatabaseAndGetProfiles() to await the first data snapshot
+        * before deciding whether to insert or update.
         */
         async function updateUserAuth(userId, newAuthorizationStatus) {
+            try {
+                const allProfiles = await openDatabaseAndGetProfiles();
 
-          const PROFILES_DATABASE_NAME = 'user-profiles';
-          let database = null;
-          
-          // Open the user profiles database (create if doesn't exist)
-          try {
-              database = await userbase.openDatabase({ 
-                  databaseName: PROFILES_DATABASE_NAME,
-                  changeHandler: (profiles) => {
-                      // Optional: Handle real-time updates to user profiles
-                      console.log('User profiles opened for updating auth status:', profiles);
-                  }
-              });
+                const existingProfile = allProfiles.find(
+                    profile => profile.item && profile.item.userId === userId
+                );
 
-              console.log(`Database "${PROFILES_DATABASE_NAME}" opened successfully`);
+                if (existingProfile) {
+                    console.log(`Updating existing profile for userId: ${userId}`, existingProfile);
 
-          } catch (error) {
-              // If database doesn't exist, it will be created on first insert
-              console.log(`Database "${PROFILES_DATABASE_NAME}" will be created on first use`);
-          }
+                    const updatedItem = {
+                        ...existingProfile.item,
+                        isAuthorized: newAuthorizationStatus,
+                        updatedAt: new Date().toISOString(),
+                        lastAuthorizedBy: currentAdmin.username,
+                        authorizedAt: new Date().toISOString()
+                    };
 
-          // Get current database contents to find existing profile
-          try {
-              let existingProfile = null;
-              let allProfiles = [];
-
-              // We need to track profiles through the changeHandler
-              // First, let's try to open the database to get existing data
-              let databaseOpened = false;
-              
-              try {
-                  await userbase.openDatabase({ 
-                      databaseName: PROFILES_DATABASE_NAME,
-                      changeHandler: (profiles) => {
-                          allProfiles = profiles || [];
-                          
-                          // Find existing profile for this user
-                          existingProfile = allProfiles.find(profile => 
-                              profile.item && profile.item.userId === userId
-                          );
-                          console.log(`Found existing profile for userId: ${userId}`);
-                          var msg = 'existing profile (' + JSON.stringify(existingProfile, null, 2) + ')'
-                          console.log(msg)
-                      }
-                  });
-                  databaseOpened = true;
-                  
-              } catch (openError) {
-                  console.log('Database doesn\'t exist yet, will create on first insert');
-              }
-
-              let result;
-
-              if (existingProfile) {
-                  // Update existing profile
-                  console.log(`Updating existing profile for userId: ${userId}`);
-                  var msg = 'existing profile (' + JSON.stringify(existingProfile, null, 2) + ')'
-                  console.log(msg)
-
-                  let newProfile = existingProfile;
-                  newProfile.item.isAuthorized = newAuthorizationStatus;
-                  
-                  result = await userbase.updateItem({
-                      databaseName: PROFILES_DATABASE_NAME,
-                      itemId: existingProfile.itemId,
-                      item: newProfile
-                  });
-
-                  msg = 'Profile updated sucessfully. New profile: (' + JSON.stringify(newProfile, null, 2) + ')'
-                  console.log(msg)
-
-                  showSuccess(`user authorization for the photo album set to ${newAuthorizationStatus}`)
-                  loadUsers()
-              } else {
-                  // create new profile, filled in.
-                const currentTime = new Date().toISOString();
-                const profileData = {
-                  userId: userId,
-                  username: '',
-                  email: '',
-                  isAuthorized: newAuthorizationStatus,
-                  lastActive: currentTime,
-                  updatedAt: currentTime,
-                  firstSeen: currentTime,
-                  loginCount: 0,
-                  deviceType: '',
-                  location: '',
-                  displayName: '',
-                  adminNotes: '',
-                  lastAuthorizedBy: '',
-                  authorizedAt: ''
-                };
-
-                var profile = await userbase.insertItem({
-                      databaseName: PROFILES_DATABASE_NAME,
-                      item: profileData
+                    await userbase.updateItem({
+                        databaseName: PROFILES_DATABASE_NAME,
+                        itemId: existingProfile.itemId,
+                        item: updatedItem
                     });
-                msg = 'New profile created for user. New profile: (' + JSON.stringify(profile, null, 2) + ')'
-                console.log(msg)
 
-                showSuccess(`user authorization for the photo album set to ${newAuthorizationStatus}`)
-                loadUsers()
+                    console.log('Profile updated successfully:', updatedItem);
+                } else {
+                    console.log(`No existing profile for userId: ${userId} — creating new one`);
 
-              }
+                    const currentTime = new Date().toISOString();
+                    const profileData = {
+                        userId,
+                        username: '',
+                        email: '',
+                        isAuthorized: newAuthorizationStatus,
+                        lastActive: currentTime,
+                        updatedAt: currentTime,
+                        firstSeen: currentTime,
+                        loginCount: 0,
+                        deviceType: '',
+                        location: '',
+                        displayName: '',
+                        adminNotes: '',
+                        lastAuthorizedBy: currentAdmin.username,
+                        authorizedAt: currentTime
+                    };
+
+                    await userbase.insertItem({
+                        databaseName: PROFILES_DATABASE_NAME,
+                        item: profileData
+                    });
+
+                    console.log('New profile created for userId:', userId);
+                }
+
+                showSuccess(`User authorization set to ${newAuthorizationStatus}`);
+                loadUsers();
+
             } catch (error) {
-              console.error('Error updating user profile:', error);
-              
-              // Log more specific error information
-              if (error.name === 'DatabaseNotOpen') {
-                  console.error('Database connection issue. Retrying...');
-                  // Could implement retry logic here
-              } else if (error.name === 'ItemNotFound') {
-                  console.error('Attempted to update non-existent profile');
-              } else if (error.name === 'ItemAlreadyExists') {
-                  console.error('Profile creation conflict');
-              }
-              
-              // Return error information instead of throwing
-              // This prevents login failures due to profile update issues
-              return {
-                  success: false,
-                  error: error.message,
-                  profileData: null
-              };
-            }
+                console.error('Error updating user profile:', error);
 
+                if (error.name === 'DatabaseNotOpen') {
+                    console.error('Database connection issue.');
+                } else if (error.name === 'ItemNotFound') {
+                    console.error('Attempted to update non-existent profile.');
+                } else if (error.name === 'ItemAlreadyExists') {
+                    console.error('Profile creation conflict.');
+                }
+
+                showError('Error updating authorization: ' + error.message);
+            }
         }
 
         /***************************************************************************
-        * After the getUsersFromDatabase function is called (which populates the allUsers
-        * variable), this function should be called to populate each of the users with
-        * their profile data.
+        * After getUsersFromDatabase() populates allUsers, call this to attach each
+        * user's profile data from the profiles database.
+        *
+        * FIX: Declared allProfiles with const instead of accidentally creating a
+        * global variable.
         */
         async function populateAllUserProfiles() {
-          console.log('populating all user profiles')
-          try {
-              await userbase.openDatabase({ 
-                  databaseName: PROFILES_DATABASE_NAME,
-                  changeHandler: (profiles) => {
-                      allProfiles = profiles || [];
-                      
-                      allProfiles.forEach(profile => {
-                          var wasProfileAssociated = false;
-                          // Look at users that match the profile, and associate them
-                          allUsers.forEach(user => {
-                            if (user.userId == profile.item.userId && user.profile == null) {
-                              user.profile = profile;
-                              console.log(`associating profile itemId ${profile.itemId} with user ${user.username}`)
-                              wasProfileAssociated = true;
-                              var msg = '  associated profile: (' + JSON.stringify(profile, null, 2) + ')'
-                              console.log(msg)
-                            }
-                          })
-                          
-                          if (! wasProfileAssociated) {
-                            // delete unused profile, stuff shouldn't get in there, but the db sucks, so for now....
-                            console.log(`deleting unassociated profile with id ${profile.itemId}`)
-                            userbase.deleteItem({
-                              databaseName: PROFILES_DATABASE_NAME, 
-                              itemId: `${profile.itemId}`
-                            }).then(() => {
-                              // item deleted
-                              console.log ('deletion successful')
-                            }).catch((e) => console.log(e))
-                          }
-                      });
-                  }
-              });
-          } catch (error) {
-              console.log(error);
-          }
-          
-          // are there any users that don't have populated profiles now? What if that is true?
-          allUsers.forEach(user => {
-            if (! user.profile) {
-              console.log(`user ${user.username} does not have an associated profile`) 
-            }
-          })
+            console.log('Populating all user profiles');
+            try {
+                // FIX: await the snapshot so profile data is available synchronously
+                // in the loop below, instead of relying on the changeHandler firing
+                // at an unpredictable time.
+                const allProfiles = await openDatabaseAndGetProfiles();  // FIX: was an undeclared global
 
+                allProfiles.forEach(profile => {
+                    let wasProfileAssociated = false;
+
+                    allUsers.forEach(user => {
+                        if (user.userId === profile.item.userId && !user.profile) {
+                            user.profile = profile;
+                            console.log(`Associated profile ${profile.itemId} with user ${user.username}`);
+                            wasProfileAssociated = true;
+                        }
+                    });
+
+                    if (!wasProfileAssociated) {
+                        console.log(`Deleting unassociated profile ${profile.itemId}`);
+                        userbase.deleteItem({
+                            databaseName: PROFILES_DATABASE_NAME,
+                            itemId: profile.itemId
+                        }).then(() => {
+                            console.log('Deletion successful');
+                        }).catch(console.error);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error populating user profiles:', error);
+            }
+
+            allUsers.forEach(user => {
+                if (!user.profile) {
+                    console.log(`User ${user.username} has no associated profile`);
+                }
+            });
         }
-        
 
         /***************************************************************************
         * Display users in the grid
         */
         function displayUsers() {
-            console.log(`displaying all ${allUsers.length} users`)
+            console.log(`Displaying all ${allUsers.length} users`);
             usersList.innerHTML = '';
             
             allUsers.forEach(userData => {
                 const userCard = createUserCard(userData);
                 usersList.appendChild(userCard);
-                console.log('displaying user: ' + JSON.stringify(userData,null,2))
+                console.log('Displaying user:', JSON.stringify(userData, null, 2));
             });
         }
 
@@ -746,11 +677,11 @@
         * Create user card element
         */
         function createUserCard(userData) {
-            const userName = userData.username;
+            const userName     = userData.username;
             const isAuthorized = userData.profile?.item?.isAuthorized || false;
-            const userId = userData.userId;
-            const userEmail = userData.email;
-            const lastActive = userData.profile?.item?.lastActive || 'no profile yet'
+            const userId       = userData.userId;
+            const userEmail    = userData.email;
+            const lastActive   = userData.profile?.item?.lastActive || 'no profile yet';
             
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -780,17 +711,17 @@
         * Update statistics
         */
         function updateStats() {
-            const total = allUsers.length;
-            const authorized = allUsers.filter(u => u.profile?.item?.isAuthorized).length;
+            const total       = allUsers.length;
+            const authorized  = allUsers.filter(u => u.profile?.item?.isAuthorized).length;
             const unauthorized = total - authorized;
             
-            totalUsersEl.textContent = total;
-            authorizedUsersEl.textContent = authorized;
+            totalUsersEl.textContent       = total;
+            authorizedUsersEl.textContent  = authorized;
             unauthorizedUsersEl.textContent = unauthorized;
         }
 
         /***************************************************************************
-        * Utility functions
+        * Show error message in the login error div
         */
         function showError(message) {
             loginError.innerHTML = `<div class="error">${message}</div>`;
@@ -798,27 +729,23 @@
         }
 
         /***************************************************************************
-        * clear login error div
+        * Clear login error div
         */
         function clearError() {
             loginError.style.display = 'none';
         }
 
         /***************************************************************************
-        * show success message
+        * Show a temporary success message below the Refresh button
         */
         function showSuccess(message) {
             const successDiv = document.createElement('div');
             successDiv.className = 'success';
             successDiv.textContent = message;
             
-            // Insert after the refresh button
             refreshBtn.parentNode.insertBefore(successDiv, refreshBtn.nextSibling);
             
-            // Remove after 3 seconds
-            setTimeout(() => {
-                successDiv.remove();
-            }, 3000);
+            setTimeout(() => successDiv.remove(), 3000);
         }
     </script>
 </body>
