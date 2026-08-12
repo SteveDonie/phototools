@@ -369,15 +369,11 @@
         // FIX: The Userbase admin API bearer token must NOT live in client-side JS.
         // Anyone who views source can steal it and make admin API calls directly.
         //
-        // The right fix is to move getUsersFromDatabase() to a small server-side
-        // endpoint (a Netlify/Vercel function, a Node proxy, etc.) that holds the
-        // token in an environment variable and returns only the data this page needs.
-        //
-        // For now the token has been removed from this file. Replace the placeholder
-        // below with your server-side proxy URL, or add the token back temporarily
-        // only on a locally-served, non-public copy.
+        // I used Claude to generate a server side AWS Lambda function at the following 
+        // USERS_PROXY_URL that does the correct thing. See the instructions at
+        // phototools/admin-users-lambda/README.md
         const USERBASE_APP_ID  = 'b6a8348d-da63-495e-9600-e4f3368cc3f3';
-        const USERS_PROXY_URL  = '/api/admin-users'; // <-- your server-side proxy
+        const USERS_PROXY_URL  = 'https://3zx5xc4zvqab2zptgx2u64lk540qbies.lambda-url.us-east-1.on.aws/'; 
 
         // DOM elements
         const loginSection      = document.getElementById('loginSection');
@@ -498,7 +494,12 @@
         *   { users: [ { username, userId, appId, creationDate, email }, ... ] }
         */
         async function getUsersFromDatabase() {
-            const response = await fetch(USERS_PROXY_URL, { method: 'GET' });
+            // Send the signed-in admin's Userbase authToken; the Lambda verifies
+            // it via the Verify Auth Token API and rejects everyone else.
+            const response = await fetch(USERS_PROXY_URL, {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + currentAdmin.authToken }
+            });
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
             }
@@ -660,6 +661,43 @@
         }
 
         /***************************************************************************
+        * Permanently delete a user account via the Lambda proxy.
+        * The Lambda signs in to the Userbase admin panel and calls its
+        * delete-user + permanent-delete-user endpoints. After deletion the
+        * user can sign up fresh with a new username/email.
+        *
+        * The user's orphaned record in the user-profiles database is cleaned
+        * up automatically by populateAllUserProfiles() on the next refresh.
+        */
+        async function deleteUserAccount(userId, username) {
+            const warning = `Permanently delete user "${username}"?\n\n` +
+                'This cannot be undone. They will be able to sign up ' +
+                'again with a new username and email.';
+            if (!confirm(warning)) return;
+
+            try {
+                const response = await fetch(USERS_PROXY_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + currentAdmin.authToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'deleteUser', userId, username })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error || `Response status: ${response.status}`);
+                }
+
+                showSuccess(`User ${username} permanently deleted`);
+                loadUsers();
+            } catch (error) {
+                showError('Error deleting user: ' + error.message);
+            }
+        }
+
+        /***************************************************************************
         * Display users in the grid
         */
         function displayUsers() {
@@ -697,9 +735,13 @@
                     ${isAuthorized ? 'Authorized' : 'Unauthorized'}
                 </div>
                 <div class="user-actions">
-                    <button class="btn ${isAuthorized ? 'btn-danger' : 'btn-success'}" 
+                    <button class="btn ${isAuthorized ? 'btn-danger' : 'btn-success'}"
                             onclick="updateUserAuth('${userId}', ${!isAuthorized})">
                         ${isAuthorized ? 'Revoke Access' : 'Grant Access'}
+                    </button>
+                    <button class="btn btn-danger"
+                            onclick="deleteUserAccount('${userId}', '${userName}')">
+                        Delete User
                     </button>
                 </div>
             `;

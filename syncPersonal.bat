@@ -6,7 +6,7 @@ aws s3 cp "%USERPROFILE%\albums\index.html" s3://album.donie.us/
 aws s3 cp "%USERPROFILE%\albums\resume-icon.jpg" s3://album.donie.us/
 
 echo Syncing resume
-aws s3 cp "%USERPROFILE%\Google Drive\Steve Donie" resume.pdf s3://album.donie.us/SteveResume.pdf
+aws s3 cp "%USERPROFILE%\Google Drive\Steve Donie resume.pdf" s3://album.donie.us/SteveResume.pdf
 
 echo Syncing album 'projects'
 aws s3 sync "%USERPROFILE%\albums\projects" s3://album.donie.us/projects --delete

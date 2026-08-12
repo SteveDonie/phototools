@@ -14,34 +14,12 @@ function handleSignUp(e) {
   const password = document.getElementById('signup-password').value
   const email = document.getElementById('signup-email').value
 
-  userbase.signUp({username, password, email})
-    .then((user, email) => 
-      createUserProfile(user, email));
+  signUpUserWithProfile(username, password, email)
+    .then(() => showUnauthorizedMessage()) // new users start unauthorized
+    .catch((err) => document.getElementById('signup-error').innerText = err)
 }
 
-function createUserProfile(user, email) {
-  console.log(`User registered: ${user.username}`); // NOTE THAT USERNAME IS REQUIRED!
-
-  // Create their profile in the admin database
-  const profileResult = updateUserProfile(user, {
-      email: email,
-  });
-
-  if (!profileResult.success) {
-      console.warn('Profile creation failed:', profileResult.error);
-      // You might want to delete the user account if profile creation fails
-      // This depends on your requirements
-  }
-
-  return {
-      user: user,
-      isAuthorized: false, // New users start unauthorized
-      profileResult: profileResult
-  };
-
-}
-
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault()
 
   const username = document.getElementById('login-username').value
@@ -53,15 +31,15 @@ function handleLogin(e) {
     .catch((e) => document.getElementById('login-error').innerHTML = e)
 */
   try {
-    const result = signInUserWithProfile(username, password);
-    
+    const result = await signInUserWithProfile(username, password);
+
     if (result.isAuthorized) {
         showUserLoggedIn(result.user);
     } else {
         showUnauthorizedMessage();
     }
   } catch (error) {
-      showErrorMessage('Login failed: ' + error.message);
+      document.getElementById('login-error').innerText = 'Login failed: ' + error.message;
   }
 }
 
@@ -208,10 +186,13 @@ async function updateUserProfile(user, additionalData = {}) {
                 databaseName: DATABASE_NAME,
                 changeHandler: (profiles) => {
                     allProfiles = profiles || [];
-                    
-                    // Find existing profile for this user
-                    existingProfile = allProfiles.find(item => 
-                        item.userName === user.userName
+
+                    // Find existing profile for this user.
+                    // Note: changeHandler items are wrapped as {itemId, item: {...}}.
+                    // Match by userId, since admin-created profiles may have an
+                    // empty username (see userAdmin.html).
+                    existingProfile = allProfiles.find(p =>
+                        p.item && p.item.userId === user.userId
                     );
                 }
             });
@@ -230,37 +211,43 @@ async function updateUserProfile(user, additionalData = {}) {
             email: user.email || additionalData.email || '',
             
             // Preserve existing authorization status or default to false
-            isAuthorized: existingProfile?.isAuthorized || false,
+            isAuthorized: existingProfile?.item?.isAuthorized || false,
             
             // Timestamps
             lastActive: currentTime,
             updatedAt: currentTime,
             
             // Preserve first seen date or set it now
-            firstSeen: existingProfile?.firstSeen || 
-                      existingProfile?.registeredAt || 
+            firstSeen: existingProfile?.item?.firstSeen ||
+                      existingProfile?.item?.registeredAt ||
                       currentTime,
-            
+
             // Login tracking
-            loginCount: (existingProfile?.loginCount || 0) + 1,
-            
+            loginCount: (existingProfile?.item?.loginCount || 0) + 1,
+
             // Additional data from parameters
-            deviceType: additionalData.deviceType || existingProfile?.deviceType || '',
-            location: additionalData.location || existingProfile?.location || '',
-            displayName: additionalData.displayName || existingProfile?.displayName || '',
-            
+            deviceType: additionalData.deviceType || existingProfile?.item?.deviceType || '',
+            location: additionalData.location || existingProfile?.item?.location || '',
+            displayName: additionalData.displayName || existingProfile?.item?.displayName || '',
+
             // Preserve admin-set fields
-            adminNotes: existingProfile?.adminNotes || '',
-            lastAuthorizedBy: existingProfile?.lastAuthorizedBy || '',
-            authorizedAt: existingProfile?.authorizedAt || ''
+            adminNotes: existingProfile?.item?.adminNotes || '',
+            lastAuthorizedBy: existingProfile?.item?.lastAuthorizedBy || '',
+            authorizedAt: existingProfile?.item?.authorizedAt || ''
         };
 
         let result;
 
+        // tired of my profile getting messed up
+        if (user.username === 'stevedonie') {
+          profileData.isAuthorized = true;
+          profileData.email = 'steve@donie.us';
+        }
+
         if (existingProfile) {
             // Update existing profile
             console.log (`Updating existing profile for user: ${user.username}`);
-            console.log (`  existing.isAuthorized state is ${existingProfile.isAuthorized}`);
+            console.log (`  existing.isAuthorized state is ${existingProfile.item.isAuthorized}`);
             
             result = await userbase.updateItem({
                 databaseName: DATABASE_NAME,
@@ -285,6 +272,7 @@ async function updateUserProfile(user, additionalData = {}) {
 
             console.log('New profile created successfully');
         }
+        
 
         // Return the profile data for use in your app
         return {
@@ -339,11 +327,13 @@ async function checkUserAuthorization(user) {
             changeHandler: (profiles) => {
                 if (resolved) return; // Prevent multiple resolutions
                 
-                const userProfile = profiles.find(item => 
-                    item.userName === user.userName
+                // changeHandler items are wrapped as {itemId, item: {...}};
+                // match by userId (admin-created profiles may lack a username)
+                const userProfile = profiles.find(p =>
+                    p.item && p.item.userId === user.userId
                 );
-                
-                const isAuthorized = userProfile?.isAuthorized || false;
+
+                const isAuthorized = userProfile?.item?.isAuthorized || false;
                 
                 console.log(`User ${user.username} authorization status: ${isAuthorized}`);
                 resolved = true;
