@@ -612,7 +612,7 @@ sub generate_album_page_auth_body {
       <script>
         console.log('auth_body script running, about to call userbase.init()')
         userbase.init({ appId: '$config->{UserBaseAppId}' })
-        .then((session) => {
+        .then(async (session) => {
           var authView = document.getElementById('auth-view')
           var albumContent = document.getElementById('album-content')
           if (session.user) {
@@ -621,10 +621,10 @@ sub generate_album_page_auth_body {
             console.log(JSON.stringify(session, null, 2))
             
             // Update user profile data
-            updateUserProfile(currentUser);
-            
+            await updateUserProfile(currentUser);
+
             // Check authorization
-            const isAuthorized = checkUserAuthorization(currentUser);
+            const isAuthorized = await checkUserAuthorization(currentUser);
 
             if (isAuthorized) {
               if (authView) { 
@@ -668,6 +668,8 @@ sub generate_album_page_auth_body {
         })
         .catch(() => {
           console.log('Error or not logged in')
+          var authView = document.getElementById('auth-view')
+          var albumContent = document.getElementById('album-content')
           if (authView) { 
             console.log('showing auth-view')
             authView.style.display = 'block'; 
