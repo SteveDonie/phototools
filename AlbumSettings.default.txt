@@ -92,7 +92,7 @@
   AlbumPageURL => "album/",
   
   # Facial recognition settings. More details on this in FaceRecognition.txt
-  EnableFaceRecognition => 1,
+  EnableFaceRecognition => 0,
   FaceTrainingDir => 'faces',
   FaceConfidenceThreshold => 0.6,
   UnknownFaceHandling => 'detect',
